@@ -85,12 +85,14 @@ def unpack_game_xp3(game_dir, out_assets_dir):
 
 def transcode_scenarios(scenario_src_dir):
     print("\n=== [3/10] 转码官方剧本与分支选择支 ===")
-    trans_script = os.path.join(TOOLS_DIR, "convert_scenario.py")
+    trans_script = os.path.join(TOOLS_DIR, "transcode_sanoba_scenarios.py")
+    if not os.path.exists(trans_script):
+        trans_script = os.path.join(TOOLS_DIR, "convert_scenario.py")
     if os.path.exists(trans_script):
-        subprocess.run([sys.executable, trans_script], check=False)
+        subprocess.run([sys.executable, trans_script], check=True)
         print("[+] 剧本转码完成，输出至 app/data/。")
     else:
-        print("[!] 未找到 convert_scenario.py，保留默认剧本。")
+        print("[!] 未找到剧本转码脚本，保留现有数据。")
 
 
 def convert_all_backgrounds(assets_dir, out_dir):
@@ -150,9 +152,11 @@ def convert_all_sds(assets_dir, out_dir):
 
 def sync_multimedia_audio(assets_dir, out_dir):
     print("\n=== [8/10] 提取并同步角色语音、BGM 与音效 ===")
-    audio_script = os.path.join(TOOLS_DIR, "sync_all_audio.py")
+    audio_script = os.path.join(TOOLS_DIR, "sync_sanoba_audio.py")
+    if not os.path.exists(audio_script):
+        audio_script = os.path.join(TOOLS_DIR, "sync_all_audio.py")
     if os.path.exists(audio_script):
-        subprocess.run([sys.executable, audio_script, "--source-root", assets_dir, "-o", out_dir], check=False)
+        subprocess.run([sys.executable, audio_script, "--source", assets_dir, "-o", out_dir], check=False)
 
 
 def run_zero_missing_audit(build_assets_dir):
