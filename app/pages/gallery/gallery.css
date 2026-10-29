@@ -1,560 +1,641 @@
-/* pages/gallery/gallery.css —— 柚子社和风多合一鉴赏收藏馆，严格适配 800x220 */
-.gallery-root {
+/* Falcon 固定 800x220；所有容器显式尺寸/flex/裁剪，不依赖浏览器盒模型简写。 */
+.gallery-root,
+.gallery-fs-root,
+.gallery-fs-overlay {
+  position: relative;
   width: 800px;
   height: 220px;
-  background-color: #0c070e;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  position: relative;
+  background-color: #0c070e;
 }
-
-.gallery-bg-img {
+.gallery-fs-root,
+.gallery-fs-overlay {
+  background-color: #000000;
+  z-index: 100;
+}
+.gallery-bg-img,
+.gallery-fs-bg {
   position: absolute;
-  left: 0;
-  top: 0;
+  left: 0px;
+  top: 0px;
   width: 800px;
   height: 220px;
+}
+.gallery-bg-img {
   opacity: 0.18;
 }
 
+/* 38px 顶栏：标题、四 Tab、返回按钮互不占用对方的区域。 */
 .gallery-header {
+  position: absolute;
+  left: 0px;
+  top: 0px;
   width: 800px;
   height: 38px;
-  background-color: rgba(22, 10, 24, 0.94);
   display: flex;
   flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding-left: 14px;
-  padding-right: 14px;
-  border-bottom-width: 1px;
-  border-bottom-color: rgba(214, 88, 114, 0.4);
+  overflow: hidden;
+  background-color: rgba(22, 10, 24, 0.94);
   z-index: 10;
 }
-
 .gallery-title-box {
+  position: absolute;
+  left: 12px;
+  top: 3px;
+  width: 304px;
+  height: 32px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
 }
-
-.gallery-title {
+.gallery-title-text {
+  width: 304px;
+  height: 16px;
   font-size: 13px;
   font-weight: bold;
   color: #f7d6a5;
-  letter-spacing: 1px;
+  overflow: hidden;
 }
-
-.gallery-subtitle {
+.gallery-title-sub {
+  width: 304px;
+  height: 12px;
   font-size: 9px;
   color: #bfa1b3;
-  margin-top: 1px;
+  overflow: hidden;
 }
-
-.gallery-tabs {
+.gallery-tab-row {
+  position: absolute;
+  left: 326px;
+  top: 6px;
+  width: 368px;
+  height: 26px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  overflow: hidden;
+}
+.gallery-tab-btn {
+  width: 86px;
+  height: 26px;
   display: flex;
   flex-direction: row;
   align-items: center;
-}
-
-.gallery-tab-item {
-  height: 26px;
-  padding-left: 12px;
-  padding-right: 12px;
+  justify-content: center;
+  overflow: hidden;
   background-color: #2b1320;
-  border-width: 1px;
-  border-color: #6a3449;
   border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 6px;
 }
-
-.gallery-tab-active {
+.gallery-tab-btn-active {
   background-color: #b82647;
-  border-color: #f2cfa0;
 }
-
 .gallery-tab-text {
+  width: 86px;
+  height: 16px;
   font-size: 11px;
   font-weight: bold;
+  text-align: center;
   color: #eedce4;
+  overflow: hidden;
 }
-
 .gallery-back-btn {
+  position: absolute;
+  left: 704px;
+  top: 6px;
+  width: 84px;
   height: 26px;
-  padding-left: 10px;
-  padding-right: 10px;
-  background-color: #381525;
-  border-width: 1px;
-  border-color: #8c3b5a;
-  border-radius: 4px;
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  margin-left: 12px;
+  overflow: hidden;
+  background-color: #381525;
+  border-radius: 4px;
 }
-
 .gallery-back-text {
+  width: 84px;
+  height: 16px;
   font-size: 11px;
   font-weight: bold;
+  text-align: center;
   color: #fbd6a5;
-}
-
-/* 横向滑动视口（类似日后谈） */
-.g-scroll-viewport {
-  width: 800px;
-  height: 182px;
-  position: relative;
   overflow: hidden;
 }
 
-.g-scroll-list {
+/* 分类页：6 张 CG 分类或 5 张女主卡，均在 182px 内容区内。 */
+.g-group-viewport,
+.g-subgroup-root,
+.g-stand-pane {
   position: absolute;
-  top: 10px;
-  height: 162px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-
-/* CG 卡片（176×154：16:9 图片 176×99 + 信息条 55，间距 10） */
-.g-cg-card {
-  width: 176px;
-  height: 154px;
-  margin-left: 10px;
-  background-color: #140a16;
-  border-width: 1px;
-  border-color: #6a3449;
-  border-radius: 6px;
+  left: 0px;
+  top: 38px;
+  width: 800px;
+  height: 182px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  position: relative;
+}
+.g-group-hint {
+  position: absolute;
+  left: 12px;
+  top: 6px;
+  width: 776px;
+  height: 14px;
+  font-size: 10px;
+  color: #bfa1b3;
+  overflow: hidden;
+}
+.g-group-row {
+  position: absolute;
+  left: 12px;
+  top: 28px;
+  width: 776px;
+  height: 144px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  overflow: hidden;
+}
+.g-group-card {
+  width: 120px;
+  height: 136px;
+  margin-right: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: #140a16;
+  border-radius: 6px;
+}
+.g-group-card-bg,
+.g-stand-group-img {
+  width: 120px;
+  height: 88px;
+  background-color: #120a16;
+}
+.g-group-info {
+  width: 120px;
+  height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: #07040a;
+}
+.g-group-name {
+  width: 120px;
+  height: 18px;
+  font-size: 13px;
+  font-weight: bold;
+  text-align: center;
+  color: #ffe6b8;
+  overflow: hidden;
+}
+.g-group-count {
+  width: 120px;
+  height: 14px;
+  margin-top: 2px;
+  font-size: 10px;
+  text-align: center;
+  color: #bfa1b3;
+  overflow: hidden;
 }
 
+/* 子分类/音乐：28px 导航 + 154px 裁剪视口。列表自身始终只有 800px。 */
+.g-cg-nav-bar {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 800px;
+  height: 28px;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+.g-sub-nav {
+  position: absolute;
+  left: 12px;
+  top: 2px;
+  width: 104px;
+  height: 24px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: #381525;
+  border-radius: 4px;
+}
+.g-sub-nav-text {
+  width: 104px;
+  height: 16px;
+  font-size: 11px;
+  font-weight: bold;
+  text-align: center;
+  color: #fbd6a5;
+  overflow: hidden;
+}
+.g-cg-page-box {
+  position: absolute;
+  left: 604px;
+  top: 2px;
+  width: 184px;
+  height: 24px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+}
+.g-page-btn {
+  width: 36px;
+  height: 24px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: #381525;
+  border-radius: 4px;
+}
+.g-page-btn-text {
+  width: 36px;
+  height: 16px;
+  font-size: 11px;
+  text-align: center;
+  color: #fbd6a5;
+  overflow: hidden;
+}
+.g-page-info {
+  width: 104px;
+  height: 16px;
+  font-size: 10px;
+  text-align: center;
+  color: #e7c9a4;
+  overflow: hidden;
+}
+.g-cg-scroll-viewport,
+.g-bgm-scroll-viewport {
+  position: absolute;
+  left: 0px;
+  top: 28px;
+  width: 800px;
+  height: 154px;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+.g-cg-group-list,
+.g-bgm-scroll-list {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 800px;
+  height: 154px;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+.g-cg-card {
+  position: absolute;
+  top: 4px;
+  width: 176px;
+  height: 142px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: #140a16;
+  border-radius: 6px;
+}
 .g-cg-card-img {
   width: 176px;
   height: 99px;
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
 }
-
-.g-cg-card-bar {
+.g-cg-card-footer {
   width: 176px;
-  height: 55px;
-  background-color: #07040a;
+  height: 43px;
   display: flex;
   flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding-left: 10px;
-  padding-right: 10px;
-  border-top-width: 2px;
-  border-top-color: #c22a4e;
-}
-
-.g-cg-card-code {
-  font-size: 13px;
-  font-weight: bold;
-  color: #ffe6b8;
-  letter-spacing: 0.5px;
-}
-
-.g-cg-card-role {
-  font-size: 10px;
-  font-weight: bold;
-  color: #ffffff;
-  background-color: #c22a4e;
-  border-radius: 3px;
-  padding: 2px 6px;
-}
-
-/* BGM 卡片 */
-.g-bgm-card {
-  width: 120px;
-  height: 150px;
-  margin-left: 10px;
-  background-color: #1e1122;
-  border-width: 1px;
-  border-color: #532438;
-  border-radius: 6px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 10px 8px;
-}
-
-.g-bgm-card-active {
-  background-color: #381527;
-  border-color: #e57373;
-}
-
-.g-bgm-card-top {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.g-bgm-card-idx {
-  font-size: 10px;
-  color: #a08298;
-}
-
-.g-bgm-card-state {
-  font-size: 10px;
-  color: #8c6a84;
-}
-
-.g-bgm-card-state.active {
-  color: #81c784;
-  font-weight: bold;
-}
-
-.g-bgm-card-code {
-  font-size: 14px;
-  font-weight: bold;
-  color: #fce4be;
-  text-align: center;
-  margin-top: 14px;
-  margin-bottom: 14px;
-}
-
-.g-bgm-card-btn {
-  height: 26px;
-  background-color: #a82442;
-  border-radius: 4px;
-  display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.g-bgm-card-btn-text {
-  font-size: 11px;
-  font-weight: bold;
-  color: #ffffff;
-}
-
-/* ================= 全屏大图模式 (双翼式布局：左侧翻页退出，右侧缩放重置) ================= */
-.gallery-fs-root {
-  width: 800px;
-  height: 220px;
-  position: absolute;
-  left: 0;
-  top: 0;
-  background-color: #000000;
   overflow: hidden;
-  z-index: 100;
+  background-color: #07040a;
+}
+.g-cg-card-code {
+  width: 164px;
+  height: 32px;
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+  color: #ffe6b8;
+  overflow: hidden;
+}
+.g-empty-text {
+  position: absolute;
+  left: 100px;
+  top: 58px;
+  width: 600px;
+  height: 24px;
+  font-size: 13px;
+  text-align: center;
+  color: #bfa1b3;
+  overflow: hidden;
 }
 
-/* 中间大图视口（宽 664px，高 220px） */
+/* 音乐卡片每页 6 首，播放状态与翻页控制保持独立。 */
+.g-bgm-card {
+  position: absolute;
+  top: 4px;
+  width: 120px;
+  height: 142px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  overflow: hidden;
+  background-color: #1e1122;
+  border-radius: 6px;
+}
+.g-bgm-card-playing {
+  background-color: #71243e;
+}
+.g-bgm-disk {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: #381525;
+  border-radius: 20px;
+}
+.g-bgm-disk-note {
+  width: 40px;
+  height: 30px;
+  font-size: 24px;
+  text-align: center;
+  color: #fbd6a5;
+  overflow: hidden;
+}
+.g-bgm-info {
+  width: 108px;
+  height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+.g-bgm-code {
+  width: 108px;
+  height: 18px;
+  font-size: 13px;
+  font-weight: bold;
+  text-align: center;
+  color: #fce4be;
+  overflow: hidden;
+}
+.g-bgm-title {
+  width: 108px;
+  height: 30px;
+  font-size: 10px;
+  text-align: center;
+  color: #bfa1b3;
+  overflow: hidden;
+}
+.g-bgm-status {
+  width: 104px;
+  height: 24px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: #a82442;
+  border-radius: 4px;
+}
+.g-bgm-status-text {
+  width: 104px;
+  height: 16px;
+  font-size: 11px;
+  text-align: center;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+/* CG/场景使用 800px 视口；立绘给双翼各留 68px，平移坐标以视口为准。 */
 .gallery-fs-viewport {
   position: absolute;
-  left: 68px;
-  top: 0;
-  width: 664px;
+  left: 0px;
+  top: 0px;
+  width: 800px;
   height: 220px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
-
+.gallery-stand-fs-viewport {
+  left: 68px;
+  width: 664px;
+}
 .gallery-fs-img {
   position: absolute;
 }
-
-/* 顶部信息条 */
-.gallery-fs-header {
+.gallery-fs-nav-left,
+.gallery-fs-nav-right,
+.gallery-fs-zoom-btn,
+.gallery-fs-close-badge {
   position: absolute;
-  left: 10px;
-  top: 8px;
-  background-color: rgba(18, 9, 21, 0.85);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: rgba(43, 19, 34, 0.94);
   border-radius: 4px;
-  padding: 3px 8px;
-  border-width: 1px;
-  border-color: rgba(220, 110, 140, 0.35);
-  z-index: 110;
+  z-index: 120;
 }
-
-.gallery-fs-header-text {
-  font-size: 10px;
+.gallery-fs-nav-left,
+.gallery-fs-nav-right {
+  top: 82px;
+  width: 44px;
+  height: 56px;
+}
+.gallery-fs-nav-left {
+  left: 8px;
+}
+.gallery-fs-nav-right {
+  left: 748px;
+}
+.gallery-fs-nav-text {
+  width: 44px;
+  height: 40px;
+  font-size: 30px;
+  text-align: center;
+  color: #f7e6e9;
+  overflow: hidden;
+}
+.gallery-fs-zoom-btn {
+  left: 8px;
+  top: 8px;
+  width: 60px;
+  height: 28px;
+}
+.gallery-fs-close-badge {
+  left: 704px;
+  top: 8px;
+  width: 88px;
+  height: 28px;
+  background-color: #8c1d35;
+}
+.gallery-fs-zoom-text,
+.gallery-fs-close-text {
+  height: 18px;
+  font-size: 12px;
   font-weight: bold;
-  color: #fae1c3;
+  text-align: center;
+  color: #f7e6e9;
+  overflow: hidden;
+}
+.gallery-fs-zoom-text {
+  width: 60px;
+}
+.gallery-fs-close-text {
+  width: 88px;
+}
+.gallery-scene-expr-bar {
+  position: absolute;
+  left: 280px;
+  top: 184px;
+  width: 240px;
+  height: 28px;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  z-index: 120;
+}
+.gallery-scene-expr-btn,
+.gallery-scene-expr-indicator {
+  width: 80px;
+  height: 28px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: rgba(43, 19, 34, 0.94);
+}
+.gallery-scene-expr-text,
+.gallery-scene-expr-ind-text {
+  width: 80px;
+  height: 18px;
+  font-size: 11px;
+  text-align: center;
+  color: #f7e6e9;
+  overflow: hidden;
 }
 
-/* 左翼控制栏 (宽 68px, 高 220px, 掌控翻页与退出) */
-.gallery-fs-left-wing {
+/* 立绘全屏双翼，无额外 padding，避免 220px 高容器被撑高。 */
+.gallery-fs-left-wing,
+.gallery-fs-right-wing {
   position: absolute;
-  left: 0;
-  top: 0;
+  top: 0px;
   width: 68px;
   height: 220px;
-  background-color: rgba(16, 8, 14, 0.94);
-  border-right-width: 1px;
-  border-right-color: rgba(200, 80, 110, 0.4);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-around;
-  padding-top: 8px;
-  padding-bottom: 8px;
+  overflow: hidden;
+  background-color: rgba(16, 8, 14, 0.94);
   z-index: 120;
 }
-
-.gallery-fs-wing-btn {
-  width: 56px;
-  height: 38px;
-  background-color: #2b1322;
-  border-width: 1px;
-  border-color: #6a3449;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.gallery-fs-left-wing {
+  left: 0px;
 }
-
+.gallery-fs-right-wing {
+  left: 732px;
+}
+.gallery-fs-wing-btn,
 .gallery-fs-wing-btn-exit {
   width: 56px;
   height: 38px;
-  background-color: #8c1d35;
-  border-width: 1px;
-  border-color: #e57373;
-  border-radius: 4px;
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  background-color: #2b1322;
+  border-radius: 4px;
 }
-
+.gallery-fs-wing-btn-exit {
+  background-color: #8c1d35;
+}
 .gallery-fs-wing-btn-text {
-  font-size: 11px;
+  width: 56px;
+  height: 16px;
+  font-size: 10px;
   font-weight: bold;
+  text-align: center;
   color: #f7e6e9;
+  overflow: hidden;
 }
-
-/* 右翼控制栏 (宽 68px, 高 220px, 掌控放大、缩小与重置) */
-.gallery-fs-right-wing {
-  position: absolute;
-  left: 732px;
-  top: 0;
-  width: 68px;
-  height: 220px;
-  background-color: rgba(16, 8, 14, 0.94);
-  border-left-width: 1px;
-  border-left-color: rgba(200, 80, 110, 0.4);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-around;
-  padding-top: 6px;
-  padding-bottom: 6px;
-  z-index: 120;
-}
-
 .gallery-fs-wing-badge {
   width: 56px;
   height: 24px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.gallery-fs-wing-badge-text {
-  font-size: 12px;
-  font-weight: bold;
-  color: #ffca28;
-}
-
-/* ===== CG 女主选择与网格（101 张，不再平铺长列表） ===== */
-.g-group-viewport {
-  width: 800px;
-  height: 182px;
-  position: relative;
-  padding-top: 8px;
-}
-
-.g-group-hint {
-  font-size: 10px;
-  color: #bfa1b3;
-  margin-left: 14px;
-}
-
-.g-group-row {
-  display: flex;
   flex-direction: row;
   align-items: center;
-  padding-left: 14px;
-  padding-top: 8px;
-}
-
-.g-group-card {
-  width: 100px;
-  height: 112px;
-  margin-right: 6px;
-  background-color: #140a16;
-  border-width: 1px;
-  border-color: #6a3449;
-  border-radius: 6px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.g-group-img {
-  width: 100px;
-  height: 56px;
-}
-
-.g-group-info {
-  width: 100px;
-  height: 56px;
-  background-color: #07040a;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
-
-.g-group-name {
-  font-size: 13px;
+.gallery-fs-wing-badge-text {
+  width: 56px;
+  height: 18px;
+  font-size: 12px;
   font-weight: bold;
-  color: #ffe6b8;
+  text-align: center;
+  color: #ffca28;
+  overflow: hidden;
 }
-
-.g-group-count {
-  font-size: 10px;
-  color: #bfa1b3;
-  margin-top: 2px;
-}
-
-.g-cg-grid-viewport {
-  width: 800px;
-  height: 182px;
-  position: relative;
-}
-
-.g-cg-nav {
-  width: 800px;
+.gallery-fs-header {
+  position: absolute;
+  left: 10px;
+  top: 8px;
+  width: 644px;
   height: 22px;
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
-  padding-left: 10px;
-  padding-right: 10px;
-}
-
-.g-cg-nav-btn {
-  height: 18px;
-  padding-left: 8px;
-  padding-right: 8px;
-  background-color: #381525;
-  border-width: 1px;
-  border-color: #8c3b5a;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
   justify-content: center;
-}
-
-.g-cg-nav-text {
-  font-size: 10px;
-  font-weight: bold;
-  color: #fbd6a5;
-}
-
-.g-cg-nav-page {
-  font-size: 10px;
-  color: #e7c9a4;
-}
-
-.g-cg-grid {
-  width: 800px;
-  height: 158px;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  padding-left: 8px;
-  padding-right: 8px;
-  padding-top: 2px;
-}
-
-.g-cg-tile {
-  width: 140px;
-  height: 74px;
-  margin-right: 4px;
-  margin-bottom: 4px;
-  background-color: #140a16;
-  border-width: 1px;
-  border-color: #6a3449;
+  overflow: hidden;
+  background-color: rgba(18, 9, 21, 0.85);
   border-radius: 4px;
-  overflow: hidden;
-  position: relative;
+  z-index: 110;
 }
-
-.g-cg-tile-img {
-  width: 140px;
-  height: 74px;
-}
-
-.g-cg-tile-code {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 140px;
-  height: 14px;
-  background-color: rgba(7, 4, 10, 0.72);
-  font-size: 9px;
+.gallery-fs-header-text {
+  width: 624px;
+  height: 16px;
+  font-size: 10px;
   font-weight: bold;
-  color: #ffe6b8;
-  text-align: center;
-}
-
-/* 选中女主后的横向滑动 CG 列表（同日后谈交互） */
-.g-cg-group-pane {
-  width: 800px;
-  height: 182px;
-  position: relative;
-}
-
-.g-cg-group-viewport {
-  width: 800px;
-  height: 160px;
-  position: relative;
+  color: #fae1c3;
   overflow: hidden;
 }
 
-.g-cg-group-list {
-  position: absolute;
-  top: 4px;
-  height: 154px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-
-/* ===== 立绘鉴赏：7 名角色、服装与表情差分 ===== */
-.g-stand-group-img {
-  width: 100px;
-  height: 56px;
-  background-color: #120a16;
-}
-
-.g-stand-pane {
-  width: 800px;
-  height: 182px;
-  display: flex;
-  flex-direction: row;
-}
-
+/* 五女主立绘：左侧预览，右侧角色、服装、表情各占独立行。 */
 .g-stand-stage {
+  position: absolute;
+  left: 0px;
+  top: 0px;
   width: 390px;
   height: 182px;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background-color: #0b0710;
-  border-right-width: 1px;
-  border-right-color: #6a3449;
 }
-
 .g-stand-img {
   position: absolute;
   left: 20px;
@@ -562,126 +643,122 @@
   width: 350px;
   height: 182px;
 }
-
+.g-stand-hint-badge {
+  position: absolute;
+  left: 20px;
+  top: 154px;
+  width: 350px;
+  height: 22px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: #1a0b16;
+  border-radius: 4px;
+}
+.g-stand-hint-text {
+  width: 350px;
+  height: 16px;
+  font-size: 10px;
+  text-align: center;
+  color: #fbd6a5;
+  overflow: hidden;
+}
 .g-stand-controls {
-  width: 409px;
-  height: 182px;
-  padding-left: 10px;
-  padding-right: 10px;
-  padding-top: 8px;
+  position: absolute;
+  left: 402px;
+  top: 12px;
+  width: 386px;
+  height: 158px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
-
-.g-stand-nav {
-  width: 389px;
+.g-stand-row,
+.g-stand-dress-row,
+.g-stand-face-row {
+  width: 386px;
+  height: 30px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+}
+.g-stand-dress-row {
+  height: 36px;
+  margin-top: 16px;
+}
+.g-stand-face-row {
+  margin-top: 16px;
+}
+.g-stand-back-btn,
+.g-stand-body-btn,
+.g-stand-dress-btn,
+.g-stand-face-btn {
   height: 28px;
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  overflow: hidden;
+  background-color: #2b1320;
+  border-radius: 4px;
 }
-
 .g-stand-back-btn {
   width: 86px;
-  height: 26px;
   background-color: #381525;
-  border-width: 1px;
-  border-color: #8c3b5a;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
-
-.g-stand-back-text {
-  font-size: 11px;
-  font-weight: bold;
-  color: #fbd6a5;
+.g-stand-body-btn {
+  width: 58px;
 }
-
-.g-stand-title {
-  width: 290px;
-  font-size: 12px;
-  font-weight: bold;
-  color: #ffe6b8;
-  text-align: right;
-}
-
-.g-stand-dress-row {
-  width: 389px;
-  height: 80px;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  margin-top: 6px;
-}
-
 .g-stand-dress-btn {
-  width: 92px;
-  height: 34px;
-  margin-right: 6px;
-  margin-bottom: 6px;
-  background-color: #2b1320;
-  border-width: 1px;
-  border-color: #6a3449;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 90px;
 }
-
 .g-stand-dress-btn-active {
   background-color: #b82647;
-  border-color: #f2cfa0;
 }
-
-.g-stand-dress-text {
-  font-size: 11px;
-  font-weight: bold;
-  color: #eedce4;
-}
-
-.g-stand-face-row {
-  width: 389px;
-  height: 36px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 4px;
-}
-
 .g-stand-face-btn {
-  width: 82px;
-  height: 32px;
-  background-color: #2b1320;
-  border-width: 1px;
-  border-color: #6a3449;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 112px;
 }
-
-.g-stand-face-btn-text {
+.g-stand-back-text,
+.g-stand-body-text,
+.g-stand-dress-text,
+.g-stand-face-text {
+  height: 16px;
   font-size: 11px;
   font-weight: bold;
-  color: #f7e6e9;
+  text-align: center;
+  color: #eedce4;
+  overflow: hidden;
 }
-
+.g-stand-back-text {
+  width: 86px;
+}
+.g-stand-body-text {
+  width: 58px;
+}
+.g-stand-dress-text {
+  width: 90px;
+}
 .g-stand-face-text {
-  width: 160px;
+  width: 112px;
+}
+.g-stand-char-name {
+  width: 210px;
+  height: 18px;
   font-size: 12px;
   font-weight: bold;
-  color: #ffca28;
   text-align: center;
+  color: #ffe6b8;
+  overflow: hidden;
 }
-
-.g-stand-hint {
-  width: 389px;
-  height: 14px;
-  font-size: 9px;
-  color: #bfa1b3;
-  margin-top: 4px;
+.g-stand-face-info {
+  width: 120px;
+  height: 18px;
+  font-size: 11px;
+  text-align: center;
+  color: #ffca28;
+  overflow: hidden;
 }

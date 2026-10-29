@@ -1,452 +1,596 @@
-// pages/flowchart/flowchart.js —— 由拓扑数据驱动的局部流程图
+// pages/flowchart/flowchart.js —— 《魔女的夜宴》7大路线拓扑流程图
 import { S, log } from '../../common.js';
-import { FLOWCHART as flowchart_data } from '../../data/flowchart_data.js';
-import { coverUrl, titleBgUrl } from '../../media.js';
+import { flowchart_data } from '../../data/flowchart_data.js';
 
 var FC_VIEW_WIDTH = 688;
-var FC_VIEW_HEIGHT = 128;
-var FC_CARD_WIDTH = 148;
-var FC_CARD_HEIGHT = 48;
-var FC_STEP_X = 174;
-var FC_STEP_Y = 58;
-var FC_NODE_MAP = {};
+var FC_VIEW_HEIGHT = 152;
+var FC_CARD_WIDTH = 152;
+var FC_CARD_HEIGHT = 40;
+var FC_STEP_X = 168;
+var FC_STEP_Y = 46;
+var FC_COLUMNS = 4;
+
 var FC_CHOICE_MAP = {};
-var FC_ROUTES = flowchart_data.routes || [];
-var FC_ROUTE_SCENARIO = flowchart_data.routeScenario || {};
-var FC_CHAPTER_START = flowchart_data.chapterStart || {};
-var FC_EMA = flowchart_data.routeArt || {};
+var FC_DISPLAY_MAP = {};
+var FC_EDGES = [];
+var FC_ROUTES = ['共通', '宁宁', '宁宁·重启', '巡', '紬', '憧子', '和奏'];
+
+var ROUTE_TO_KEY = {
+  '共通': 'main',
+  '宁宁': 'nene',
+  '宁宁·重启': 'nene_restart',
+  '巡': 'meguru',
+  '紬': 'tsumugi',
+  '憧子': 'touko',
+  '和奏': 'wakana'
+};
+
+var KEY_TO_ROUTE = {
+  'main': '共通',
+  'nene': '宁宁',
+  'nene_restart': '宁宁·重启',
+  'meguru': '巡',
+  'tsumugi': '紬',
+  'touko': '憧子',
+  'wakana': '和奏'
+};
 
 var allNodes = flowchart_data.nodes || [];
 var allChoices = flowchart_data.choices || [];
 
-for (var fc_i = 0; fc_i < allNodes.length; fc_i++) {
-  FC_NODE_MAP[allNodes[fc_i].id] = allNodes[fc_i];
-}
 for (var fc_j = 0; fc_j < allChoices.length; fc_j++) {
-  FC_CHOICE_MAP[allChoices[fc_j].id] = allChoices[fc_j];
+  var choice = allChoices[fc_j];
+  // dummyselect IDs repeat in different scripts, even within a single route.
+  FC_CHOICE_MAP[(choice.route || 'main') + ':' + choice.targetLine] = choice;
 }
 
-function fcRawNext(node) {
-  if (!node) return [];
-  var chain = (flowchart_data.chain || {})[node.id];
-  if (chain !== undefined) return Array.isArray(chain) ? chain : (chain ? [chain] : []);
-  if (node.next) return Array.isArray(node.next) ? node.next : [node.next];
-  return [];
-}
-
-// 选项与分支节点精简展示，避免在 800x220 小屏幕上密集堆叠普通台词节点
 var FC_DISPLAY_NODES = [];
-var FC_DISPLAY_MAP = {};
-function addFcDisplayNode(node) {
-  if (!node || FC_DISPLAY_MAP[node.id]) return;
-  FC_DISPLAY_MAP[node.id] = true;
-  FC_DISPLAY_NODES.push(node);
+for (var fcDispI = 0; fcDispI < allNodes.length; fcDispI++) {
+  var nd = allNodes[fcDispI];
+  var rKey = nd.route || 'main';
+  var display = {
+    id: nd.id,
+    route: KEY_TO_ROUTE[rKey] || rKey,
+    chapter: nd.chapter || 'CHAPTER 1-1',
+    title: nd.title || nd.id,
+    type: nd.type || 'normal',
+    targetLine: nd.targetLine !== undefined ? nd.targetLine : 0,
+    scenario: nd.scenario || (flowchart_data.routeScenario || {})[rKey] || rKey,
+    next: nd.next,
+    chain: (flowchart_data.chain || {})[nd.id],
+    choice: FC_CHOICE_MAP[rKey + ':' + nd.targetLine]
+  };
+  FC_DISPLAY_NODES.push(display);
+  FC_DISPLAY_MAP[display.id] = display;
 }
 
-for (var fcDispI = 0; fcDispI < allNodes.length; fcDispI++) {
-  var fcDispNode = allNodes[fcDispI];
-  if (fcDispNode.type === 'select' || fcDispNode.type === 'branch' || fcDispNode.type === 'warp') {
-    addFcDisplayNode(fcDispNode);
-    if (fcDispNode.type === 'select') {
-      var fcDispNext = fcRawNext(fcDispNode);
-      for (var fcDispJ = 0; fcDispJ < fcDispNext.length; fcDispJ++) {
-        var fcOptionNode = FC_NODE_MAP[fcDispNext[fcDispJ]];
-        if (fcOptionNode && fcOptionNode.type === 'section') addFcDisplayNode(fcOptionNode);
+// Choices absent from the major-node overview remain accessible. Their line
+// order is navigation only: it does not imply an undocumented story edge.
+for (var fcChoiceI = 0; fcChoiceI < allChoices.length; fcChoiceI++) {
+  var extraChoice = allChoices[fcChoiceI];
+  var choiceRoute = extraChoice.route || 'main';
+  var foundChoice = false;
+  for (var fcMatchI = 0; fcMatchI < FC_DISPLAY_NODES.length; fcMatchI++) {
+    if (FC_DISPLAY_NODES[fcMatchI].choice === extraChoice) foundChoice = true;
+  }
+  if (!foundChoice) {
+    var choiceNode = {
+      id: 'choice:' + choiceRoute + ':' + extraChoice.targetLine,
+      route: KEY_TO_ROUTE[choiceRoute] || choiceRoute,
+      chapter: '选择支 · ' + extraChoice.targetLine,
+      title: '剧情选择 · ' + extraChoice.targetLine,
+      type: 'select',
+      targetLine: extraChoice.targetLine,
+      scenario: (flowchart_data.routeScenario || {})[choiceRoute] || choiceRoute,
+      choice: extraChoice
+    };
+    FC_DISPLAY_NODES.push(choiceNode);
+    FC_DISPLAY_MAP[choiceNode.id] = choiceNode;
+  }
+}
+// The major-node table only stores one or two milestones for some routes.
+// Add their real chapter anchors from the transcoded scenario map so a route
+// is a readable path rather than a lone "end" card.
+function fcPrettyChapter(value) {
+  return String(value || '').replace(/^chapter[\s\u3000]*/i, '').replace(/^[\s\u3000]+/, '').trim();
+}
+
+function fcAddChapterNodes(routeKey, routeName) {
+  var prefix = routeKey + '_chapter';
+  var chapterStart = flowchart_data.chapterStart || {};
+  var existing = {};
+  var existingMax = -1;
+  for (var i = 0; i < FC_DISPLAY_NODES.length; i++) {
+    if (FC_DISPLAY_NODES[i].scenario === routeKey) {
+      existing[FC_DISPLAY_NODES[i].targetLine] = true;
+      existingMax = Math.max(existingMax, FC_DISPLAY_NODES[i].targetLine);
+    }
+  }
+  var added = [];
+  var keys = Object.keys(chapterStart).sort(function (a, b) {
+    return chapterStart[a] - chapterStart[b];
+  });
+  for (var k = 0; k < keys.length; k++) {
+    var key = keys[k];
+    if (key.indexOf(prefix) !== 0) continue;
+    var line = chapterStart[key];
+    if (typeof line !== 'number' || existing[line]) continue;
+    var label = fcPrettyChapter(key.slice(prefix.length));
+    if (!label) continue;
+    var node = {
+      id: 'chapter_node:' + routeKey + ':' + line,
+      route: routeName,
+      chapter: label,
+      title: label + ' 章',
+      type: 'chapter',
+      targetLine: line,
+      scenario: routeKey,
+      next: null
+    };
+    existing[line] = true;
+    added.push(node);
+    FC_DISPLAY_NODES.push(node);
+    FC_DISPLAY_MAP[node.id] = node;
+  }
+  added.sort(function (a, b) { return a.targetLine - b.targetLine; });
+  for (var a = 0; a < added.length; a++) {
+    if (a + 1 < added.length) added[a].next = added[a + 1].id;
+    else if (existingMax > added[a].targetLine) {
+      for (var j = 0; j < FC_DISPLAY_NODES.length; j++) {
+        if (FC_DISPLAY_NODES[j].scenario === routeKey && FC_DISPLAY_NODES[j].targetLine > added[a].targetLine) {
+          added[a].next = FC_DISPLAY_NODES[j].id;
+          break;
+        }
       }
     }
   }
 }
 
-// 若无特定分支节点（例如测试或纯线性剧本），回退至展示全部节点
-if (!FC_DISPLAY_NODES.length) {
-  FC_DISPLAY_NODES = allNodes;
+var fcSparseRoutes = ['meguru', 'tsumugi', 'touko', 'wakana'];
+for (var fcSparseI = 0; fcSparseI < fcSparseRoutes.length; fcSparseI++) {
+  var fcSparseKey = fcSparseRoutes[fcSparseI];
+  fcAddChapterNodes(fcSparseKey, KEY_TO_ROUTE[fcSparseKey]);
 }
 
-function fcValidLine(line) {
-  return typeof line === 'number' && isFinite(line) && line >= 0 && Math.floor(line) === line;
-}
+FC_DISPLAY_NODES.sort(function (a, b) {
+  return FC_ROUTES.indexOf(a.route) - FC_ROUTES.indexOf(b.route) || a.targetLine - b.targetLine;
+});
 
-function fcClamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
-
-function fcNextList(node) {
-  var next = (flowchart_data.chain || {})[node.id];
-  if (next === undefined) next = node.next;
-  if (!next) return [];
-  return Array.isArray(next) ? next : [next];
-}
-
-function fcChapters(route) {
-  var chapters = [];
-  var seen = {};
-  for (var i = 0; i < FC_DISPLAY_NODES.length; i++) {
-    var node = FC_DISPLAY_NODES[i];
-    if (node.route === route && node.chapter && !seen[node.chapter]) {
-      seen[node.chapter] = true;
-      chapters.push(node.chapter);
+for (var fcEdgeI = 0; fcEdgeI < FC_DISPLAY_NODES.length; fcEdgeI++) {
+  var source = FC_DISPLAY_NODES[fcEdgeI];
+  var targets = [source.next, source.chain];
+  for (var fcTargetI = 0; fcTargetI < targets.length; fcTargetI++) {
+    var target = targets[fcTargetI];
+    if (target && FC_DISPLAY_MAP[target] && (fcTargetI === 0 || target !== targets[0])) {
+      FC_EDGES.push({ from: source.id, to: target, kind: 'next' });
     }
   }
-  return chapters;
+}
+
+function fcChapters(routeName) {
+  var seen = {};
+  var list = [];
+  for (var i = 0; i < FC_DISPLAY_NODES.length; i++) {
+    var n = FC_DISPLAY_NODES[i];
+    if (n.route === routeName && !seen[n.chapter]) {
+      seen[n.chapter] = true;
+      list.push(n.chapter);
+    }
+  }
+  return list.length ? list : ['CHAPTER 1-1'];
+}
+
+function fcClamp(val, min, max) {
+  if (val < min) return min;
+  if (val > max) return max;
+  return val;
+}
+
+function fcOptionNode(source, option, index) {
+  var target = FC_DISPLAY_MAP[option.targetNode];
+  if (target) return target;
+  var scenario = option.scenario || option.route || source.scenario;
+  var line = option.targetLine;
+  if (typeof line !== 'number' && option.targetNode) {
+    var label = option.targetNode.replace(/^\*/, '');
+    var labelKey = (scenario === 'main' ? '' : scenario + '_') + label;
+    line = (flowchart_data.chapterStart || {})[labelKey];
+  }
+  var unresolved = typeof line !== 'number';
+  return {
+    id: source.id + ':option:' + index,
+    route: KEY_TO_ROUTE[scenario] || source.route,
+    chapter: source.chapter,
+    title: option.text || ('选项 ' + (index + 1)),
+    type: 'branch',
+    targetLine: unresolved ? source.targetLine : line,
+    scenario: unresolved ? source.scenario : scenario,
+    choiceReturn: unresolved,
+    optionIndex: index + 1
+  };
 }
 
 function fcLayout(nodes) {
+  var placed = {};
+  var order = [];
   var local = {};
-  var depths = {};
   var edges = [];
-  var i;
-  var j;
-  for (i = 0; i < nodes.length; i++) {
+  function add(node, bridge) {
+    if (placed[node.id]) return;
+    placed[node.id] = { node: node, bridge: bridge, rank: 0, degree: 0, x: 0, y: 0 };
+    order.push(node.id);
+  }
+  for (var i = 0; i < nodes.length; i++) {
     local[nodes[i].id] = true;
-    depths[nodes[i].id] = 0;
+    add(nodes[i], false);
   }
-  for (i = 0; i < nodes.length; i++) {
-    var fromNode = nodes[i];
-    var nextIds = fcNextList(fromNode);
-    for (j = 0; j < nextIds.length; j++) {
-      var targetId = nextIds[j];
-      if (local[targetId]) {
-        edges.push({ from: fromNode.id, to: targetId });
-        var nextDepth = depths[fromNode.id] + 1;
-        if (nextDepth > depths[targetId]) depths[targetId] = nextDepth;
-      }
+  // Keep the route graph readable: choice options belong to the in-game
+  // chooser, not to this overview. A choice milestone itself is the node that
+  // jumps to the question; fanning out every option made a grid of duplicate
+  // "返回选择" cards and obscured the actual route.
+  // Keep both incoming and outgoing chapter/route boundaries as clickable
+  // endpoint cards. Do not sever the graph when applying a chapter filter.
+  for (var e = 0; e < FC_EDGES.length; e++) {
+    var edge = FC_EDGES[e];
+    if (!local[edge.from] && !local[edge.to]) continue;
+    add(FC_DISPLAY_MAP[edge.from], !local[edge.from]);
+    add(FC_DISPLAY_MAP[edge.to], !local[edge.to]);
+    edges.push(edge);
+  }
+  for (var d = 0; d < edges.length; d++) placed[edges[d].to].degree++;
+  var queue = [];
+  for (var q = 0; q < order.length; q++) {
+    if (!placed[order[q]].degree) queue.push(order[q]);
+  }
+  // Kahn ranks come only from declared edges, not input array positions.
+  for (var cursor = 0; cursor < queue.length; cursor++) {
+    var id = queue[cursor];
+    for (var k = 0; k < edges.length; k++) {
+      if (edges[k].from !== id) continue;
+      var next = placed[edges[k].to];
+      next.rank = Math.max(next.rank, placed[id].rank + 1);
+      next.degree--;
+      if (!next.degree) queue.push(edges[k].to);
     }
   }
-
-  var levels = {};
-  for (i = 0; i < nodes.length; i++) {
-    var depth = depths[nodes[i].id] || 0;
-    if (!levels[depth]) levels[depth] = [];
-    levels[depth].push(nodes[i]);
+  var width = FC_VIEW_WIDTH;
+  var height = FC_VIEW_HEIGHT;
+  var maxRow = 0;
+  for (var p = 0; p < order.length; p++) {
+    var item = placed[order[p]];
+    var rank = Math.max(0, item.rank || 0);
+    var row = Math.floor(rank / FC_COLUMNS);
+    var col = row % 2 === 0 ? rank % FC_COLUMNS : FC_COLUMNS - 1 - (rank % FC_COLUMNS);
+    item.x = 12 + col * FC_STEP_X;
+    item.y = 8 + row * FC_STEP_Y;
+    maxRow = Math.max(maxRow, row);
+    width = Math.max(width, 12 + FC_COLUMNS * FC_STEP_X);
+    height = Math.max(height, 8 + (maxRow + 1) * FC_STEP_Y);
   }
-
-  var pos = {};
-  var maxDepth = 0;
-  var maxLane = 0;
-  for (var d in levels) {
-    if (!Object.prototype.hasOwnProperty.call(levels, d)) continue;
-    var depthInt = parseInt(d, 10);
-    if (depthInt > maxDepth) maxDepth = depthInt;
-    var list = levels[d];
-    for (var l = 0; l < list.length; l++) {
-      if (l > maxLane) maxLane = l;
-      pos[list[l].id] = {
-        x: depthInt * FC_STEP_X,
-        y: l * FC_STEP_Y
-      };
-    }
+  var hasNext = false;
+  for (var n = 0; n < edges.length; n++) {
+    if (edges[n].kind === 'next' && local[edges[n].from]) hasNext = true;
   }
-
-  var totalW = Math.max(FC_VIEW_WIDTH, (maxDepth + 1) * FC_STEP_X + 24);
-  var totalH = Math.max(FC_VIEW_HEIGHT, (maxLane + 1) * FC_STEP_Y + 16);
-
-  var edgeLines = [];
-  for (i = 0; i < edges.length; i++) {
-    var pFrom = pos[edges[i].from];
-    var pTo = pos[edges[i].to];
-    if (!pFrom || !pTo) continue;
-    var x1 = pFrom.x + FC_CARD_WIDTH;
-    var y1 = pFrom.y + Math.floor(FC_CARD_HEIGHT / 2);
-    var x2 = pTo.x;
-    var y2 = pTo.y + Math.floor(FC_CARD_HEIGHT / 2);
-    if (x2 <= x1) x2 = x1 + 16;
-    edgeLines.push({
-      key: edges[i].from + '_' + edges[i].to,
-      x: x1,
-      y: Math.min(y1, y2),
-      w: Math.max(16, x2 - x1),
-      h: Math.max(2, Math.abs(y2 - y1) + 2)
-    });
-  }
-
-  return { pos: pos, edges: edgeLines, w: totalW, h: totalH };
+  return { placed: placed, order: order, edges: edges, width: width, height: height, hasNext: hasNext };
 }
 
-export function fcNodeTarget(node) {
-  if (!node) return null;
-  var scenario = node.scenario || FC_ROUTE_SCENARIO[node.route] || 'main';
-  var line = node.targetLine;
-  if (!fcValidLine(line) && FC_CHAPTER_START[scenario] && node.chapter) {
-    var mapped = FC_CHAPTER_START[scenario][node.chapter];
-    if (fcValidLine(mapped)) line = mapped;
-  }
-  if (!fcValidLine(line)) return null;
-  return { scenario: scenario, line: line };
+function fcRefreshLayout(vm) {
+  var nodes = vm.getFcChapterNodes();
+  var layout = fcLayout(nodes);
+  vm._fcLayout = layout;
+  vm.flowPanMaxX = Math.max(0, layout.width - FC_VIEW_WIDTH);
+  vm.flowPanMaxY = Math.max(0, layout.height - FC_VIEW_HEIGHT);
+  vm.flowPanX = fcClamp(Number(vm.flowPanX) || 0, -vm.flowPanMaxX, 0);
+  vm.flowPanY = fcClamp(Number(vm.flowPanY) || 0, -vm.flowPanMaxY, 0);
+}
+
+function fcEnsure(vm) {
+  if (FC_ROUTES.indexOf(vm.flowRoute) < 0) vm.flowRoute = '共通';
+  var chs = fcChapters(vm.flowRoute);
+  vm.flowChapterIndex = fcClamp(Number(vm.flowChapterIndex) || 0, 0, Math.max(0, chs.length - 1));
+  if (typeof vm.flowNotice !== 'string') vm.flowNotice = '轻触卡片跳转剧情节点';
+}
+
+function fcTypeName(type) {
+  if (type === 'select') return '选项';
+  if (type === 'branch') return '分歧';
+  if (type === 'warp') return '轮回';
+  if (type === 'chapter') return '章节';
+  return '剧情';
 }
 
 export var flowchartMethods = {
   initFlowchart: function () {
     this.flowPanX = 0;
     this.flowPanY = 0;
-    this.flowPanMaxX = 0;
-    this.flowPanMaxY = 0;
-    this.flowNotice = '';
+    this.flowRoute = '共通';
+    this.flowChapterIndex = 0;
+    this.flowSelectedNodeId = null;
+    this.flowNotice = '轻触节点跳转剧情；右侧切换路线';
     this._fcStartX = 0;
     this._fcStartY = 0;
     this._fcStartPanX = 0;
     this._fcStartPanY = 0;
     this._fcMoved = false;
-    if (!this.flowRoute || FC_ROUTES.indexOf(this.flowRoute) < 0) {
-      this.flowRoute = FC_ROUTES.length ? FC_ROUTES[0] : '';
-    }
-    var chapters = fcChapters(this.flowRoute);
-    if (this.flowChapterIndex >= chapters.length) {
-      this.flowChapterIndex = 0;
-    }
-    this.updateFlowPanMax();
+    this._fcTouchActive = false;
+    fcRefreshLayout(this);
   },
-
-  updateFlowPanMax: function () {
-    var nodes = this.currentChapterNodes();
-    var layout = fcLayout(nodes);
-    this.flowPanMaxX = Math.max(0, layout.w - FC_VIEW_WIDTH);
-    this.flowPanMaxY = Math.max(0, layout.h - FC_VIEW_HEIGHT);
-    this.flowPanX = fcClamp(this.flowPanX || 0, -this.flowPanMaxX, 0);
-    this.flowPanY = fcClamp(this.flowPanY || 0, -this.flowPanMaxY, 0);
+  getFcChapters: function () {
+    fcEnsure(this);
+    return fcChapters(this.flowRoute);
   },
-
-  currentChapterNodes: function () {
-    var chapters = fcChapters(this.flowRoute);
-    if (!chapters.length) return [];
-    var ch = chapters[this.flowChapterIndex] || chapters[0];
-    var out = [];
+  getFcChapterNodes: function () {
+    fcEnsure(this);
+    var nodes = [];
     for (var i = 0; i < FC_DISPLAY_NODES.length; i++) {
-      var n = FC_DISPLAY_NODES[i];
-      if (n.route === this.flowRoute && n.chapter === ch) out.push(n);
+      if (FC_DISPLAY_NODES[i].route === this.flowRoute) nodes.push(FC_DISPLAY_NODES[i]);
     }
-    return out;
+    return nodes;
   },
-
-  selectRoute: function (route) {
+  getFcRouteNodes: function () {
+    return this.getFcChapterNodes();
+  },
+  selectFcRoute: function (route) {
     if (FC_ROUTES.indexOf(route) < 0) return;
     this.flowRoute = route;
     this.flowChapterIndex = 0;
-    this.flowPanX = 0;
-    this.flowPanY = 0;
     this.flowSelectedNodeId = null;
-    this.flowNotice = '';
-    this.updateFlowPanMax();
+    this.flowNotice = route + '线 · ' + this.getFcChapterNodes().length + ' 个节点';
+    this.resetFcPan();
+    fcRefreshLayout(this);
   },
-
-  prevChapter: function () {
-    var chapters = fcChapters(this.flowRoute);
-    if (!chapters.length) return;
-    this.flowChapterIndex = (this.flowChapterIndex - 1 + chapters.length) % chapters.length;
-    this.flowPanX = 0;
-    this.flowPanY = 0;
+  setFcChapter: function (index) {
+    // Kept for callers that still jump to a chapter; the visible graph now
+    // always shows the whole route, so this only focuses the viewport.
+    fcEnsure(this);
+    var count = fcChapters(this.flowRoute).length;
+    this.flowChapterIndex = fcClamp(Number(index) || 0, 0, Math.max(0, count - 1));
     this.flowSelectedNodeId = null;
-    this.flowNotice = '';
-    this.updateFlowPanMax();
+    this.flowNotice = '章节：' + fcChapters(this.flowRoute)[this.flowChapterIndex];
+    this.resetFcPan();
+    fcRefreshLayout(this);
   },
-
-  nextChapter: function () {
-    var chapters = fcChapters(this.flowRoute);
-    if (!chapters.length) return;
-    this.flowChapterIndex = (this.flowChapterIndex + 1) % chapters.length;
-    this.flowPanX = 0;
-    this.flowPanY = 0;
-    this.flowSelectedNodeId = null;
-    this.flowNotice = '';
-    this.updateFlowPanMax();
+  selectFcChapter: function (chapter) {
+    var index = this.getFcChapters().indexOf(chapter);
+    if (index >= 0) this.setFcChapter(index);
   },
-
-  panFlow: function (dx, dy) {
-    this.flowPanX = fcClamp((this.flowPanX || 0) + dx, -this.flowPanMaxX, 0);
-    this.flowPanY = fcClamp((this.flowPanY || 0) + dy, -this.flowPanMaxY, 0);
+  prevFcChapter: function () {
+    this.setFcChapter(this.flowChapterIndex - 1);
   },
-
-  jumpFromFlowchart: function (targetLine) {
-    if (!fcValidLine(targetLine)) {
-      this.flowNotice = '该节点未配置有效行号，无法跳转';
-      return;
-    }
-    var target = null;
-    if (this.flowSelectedNodeId && FC_NODE_MAP[this.flowSelectedNodeId]) {
-      target = fcNodeTarget(FC_NODE_MAP[this.flowSelectedNodeId]);
-    }
-    var scenario = target ? target.scenario : (FC_ROUTE_SCENARIO[this.flowRoute] || 'main');
-    var line = target ? target.line : targetLine;
-    this.view = 'game';
-    if (typeof this.initGame === 'function') {
-      this.initGame(scenario, line);
-    }
+  nextFcChapter: function () {
+    this.setFcChapter(this.flowChapterIndex + 1);
   },
-
-  onFcCardClick: function (node) {
-    if (this._fcMoved) return;
+  activateFcNode: function (node) {
+    if (!node || this._fcMoved) return;
     this.flowSelectedNodeId = node.id;
-    var target = fcNodeTarget(node);
-    if (target) {
-      this.flowNotice = '目标行：' + target.line + '（' + target.scenario + '）· 轻触底部即可跳转';
-    } else {
-      this.flowNotice = node.title + ' · 当前无跳转行号';
-    }
+    var line = typeof node.targetLine === 'number' ? node.targetLine : 0;
+    var scenario = node.scenario || ROUTE_TO_KEY[node.route] || 'main';
+    log('flowchart node jump to: ' + scenario + ' line=' + line);
+    this.jumpFromFlowchart(scenario, line);
   },
-
   onFcTouchStart: function (e) {
     if (e && e.changedTouches && e.changedTouches[0]) {
       var t = e.changedTouches[0];
-      this._fcStartX = t.pageX || t.clientX || 0;
-      this._fcStartY = t.pageY || t.clientY || 0;
+      this._fcStartX = typeof t.pageX === 'number' ? t.pageX : (t.clientX || 0);
+      this._fcStartY = typeof t.pageY === 'number' ? t.pageY : (t.clientY || 0);
       this._fcStartPanX = this.flowPanX || 0;
       this._fcStartPanY = this.flowPanY || 0;
       this._fcMoved = false;
+      this._fcTouchActive = true;
     }
   },
-
   onFcTouchMove: function (e) {
-    if (e && e.changedTouches && e.changedTouches[0]) {
+    if (this._fcTouchActive && e && e.changedTouches && e.changedTouches[0]) {
       var t = e.changedTouches[0];
-      var cx = t.pageX || t.clientX || 0;
-      var cy = t.pageY || t.clientY || 0;
+      var cx = typeof t.pageX === 'number' ? t.pageX : (t.clientX || 0);
+      var cy = typeof t.pageY === 'number' ? t.pageY : (t.clientY || 0);
       var dx = cx - this._fcStartX;
       var dy = cy - this._fcStartY;
-      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
-        this._fcMoved = true;
-      }
-      this.flowPanX = fcClamp(this._fcStartPanX + dx, -this.flowPanMaxX, 0);
-      this.flowPanY = fcClamp(this._fcStartPanY + dy, -this.flowPanMaxY, 0);
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) this._fcMoved = true;
+      this.flowPanX = fcClamp(this._fcStartPanX + dx, -(this.flowPanMaxX || 0), 0);
+      this.flowPanY = fcClamp(this._fcStartPanY + dy, -(this.flowPanMaxY || 0), 0);
     }
   },
-
-  onFcTouchEnd: function () {
-    // 手势结束，状态自然保持
+  onFcTouchEnd: function (e) {
+    this.onFcTouchMove(e);
+    this._fcTouchActive = false;
+    // Native click can arrive much later than touchend. Only a fresh touch
+    // starts a new tap; a timer must not re-enable the previous drag's click.
+  },
+  onFcTouchCancel: function () {
+    this._fcTouchActive = false;
+    this._fcMoved = true;
+  },
+  panFcBy: function (dx, dy) {
+    this.flowPanX = fcClamp((this.flowPanX || 0) + dx, -(this.flowPanMaxX || 0), 0);
+    this.flowPanY = fcClamp((this.flowPanY || 0) + dy, -(this.flowPanMaxY || 0), 0);
+  },
+  resetFcPan: function () {
+    this.flowPanX = 0;
+    this.flowPanY = 0;
+  },
+  jumpFromFlowchart: function (scenario, line) {
+    if (typeof scenario !== 'string' || !scenario) scenario = 'main';
+    var l = typeof line === 'number' ? Math.floor(line) : 0;
+    if (l < 0) l = 0;
+    log('jump from flowchart to ' + scenario + ' line ' + l);
+    this.currentScenario = scenario;
+    this.currentScenarioData = null;
+    this.view = 'game';
+    if (typeof this.initGame === 'function') this.initGame(scenario, l);
+  },
+  returnToTitleFromFc: function () {
+    this.view = 'title';
+    if (typeof this.initTitle === 'function') this.initTitle();
   }
 };
 
+function fcText(h, style, value) {
+  return h('text', { staticStyle: S(style) }, value);
+}
+
+function fcButton(h, style, label, action) {
+  return h('div', { staticStyle: S(style), on: { click: action } }, [fcText(h, style + '-text', label)]);
+}
+
+function fcRenderNode(vm, h, placed) {
+  var node = placed.node;
+  var selected = vm.flowSelectedNodeId === node.id;
+  var style = 'fc-node fc-node-' + node.type + (placed.bridge ? ' fc-node-bridge' : '') + (selected ? ' fc-node-selected' : '');
+  var type = placed.bridge ? '接续·' + node.route : fcTypeName(node.type);
+  if (node.optionIndex) type = node.optionIndex + (node.choiceReturn ? '·返回选择' : '·选项目标');
+  return h('div', {
+    key: node.id,
+    staticStyle: S(style, {
+      left: (placed.x + (vm.flowPanX || 0)) + 'px',
+      top: (placed.y + (vm.flowPanY || 0)) + 'px'
+    }),
+    on: { click: function () { vm.activateFcNode(node); } }
+  }, [
+    h('div', { staticStyle: S('fc-node-top') }, [
+      fcText(h, 'fc-node-type', type),
+      fcText(h, 'fc-node-line', node.targetLine + '句')
+    ]),
+    fcText(h, 'fc-node-title', (placed.bridge ? node.chapter + ' · ' : '') + (node.title || node.id))
+  ]);
+}
+
+// Native Falcon primitives only. Clip the segments numerically as well as at
+// the viewport; logical graph extents never become native container sizes.
+function fcRenderEdge(vm, h, edge, children) {
+  var layout = vm._fcLayout;
+  var from = layout.placed[edge.from];
+  var to = layout.placed[edge.to];
+  if (!from || !to) return;
+  var panX = vm.flowPanX || 0;
+  var panY = vm.flowPanY || 0;
+  var fromCx = from.x + FC_CARD_WIDTH / 2 + panX;
+  var fromCy = from.y + FC_CARD_HEIGHT / 2 + panY;
+  var toCx = to.x + FC_CARD_WIDTH / 2 + panX;
+  var toCy = to.y + FC_CARD_HEIGHT / 2 + panY;
+  var key = edge.from + '>' + edge.to;
+  var arrow = '→';
+  var arrowX = toCx - 7;
+  var arrowY = toCy - 7;
+
+  function segment(x, y, width, height, cls, suffix) {
+    var right = Math.min(FC_VIEW_WIDTH, x + width);
+    var bottom = Math.min(FC_VIEW_HEIGHT, y + height);
+    x = Math.max(0, x);
+    y = Math.max(0, y);
+    if (right <= x || bottom <= y) return;
+    children.push(h('div', {
+      key: key + suffix,
+      staticStyle: S(cls, { left: x + 'px', top: y + 'px', width: (right - x) + 'px', height: (bottom - y) + 'px' })
+    }));
+  }
+
+  if (Math.abs(fromCy - toCy) < 1) {
+    // Same row: snake rows alternate direction.
+    if (toCx >= fromCx) {
+      segment(from.x + FC_CARD_WIDTH + panX, fromCy, to.x + panX - (from.x + FC_CARD_WIDTH + panX), 1, 'fc-edge-h', ':h');
+    } else {
+      segment(to.x + FC_CARD_WIDTH + panX, toCy, from.x + panX - (to.x + FC_CARD_WIDTH + panX), 1, 'fc-edge-h', ':h');
+      arrow = '←';
+      arrowX = to.x + FC_CARD_WIDTH + panX - 1;
+    }
+  } else if (Math.abs(fromCx - toCx) < 1) {
+    // End of a snake row: connect the two row endpoints vertically.
+    if (toCy > fromCy) {
+      segment(fromCx, from.y + FC_CARD_HEIGHT + panY, 1, to.y + panY - (from.y + FC_CARD_HEIGHT + panY), 'fc-edge-v', ':v');
+      arrow = '↓';
+      arrowY = to.y + panY - 1;
+      arrowX = toCx - 7;
+    } else {
+      segment(toCx, to.y + FC_CARD_HEIGHT + panY, 1, from.y + panY - (to.y + FC_CARD_HEIGHT + panY), 'fc-edge-v', ':v');
+      arrow = '↑';
+      arrowY = to.y + FC_CARD_HEIGHT + panY - 1;
+      arrowX = toCx - 7;
+    }
+  } else {
+    // Cross-route / bridge: orthogonal L path from the source bottom to target.
+    segment(fromCx, from.y + FC_CARD_HEIGHT + panY, 1, toCy - (from.y + FC_CARD_HEIGHT + panY), 'fc-edge-v', ':v');
+    segment(Math.min(fromCx, toCx), toCy, Math.abs(toCx - fromCx) + 1, 1, 'fc-edge-h', ':h');
+    arrow = toCx >= fromCx ? '→' : '←';
+    arrowX = toCx >= fromCx ? toCx - 7 : toCx + 1;
+  }
+
+  if (arrowX >= 0 && arrowX <= FC_VIEW_WIDTH - 10 && arrowY >= 0 && arrowY <= FC_VIEW_HEIGHT - 14) {
+    children.push(h('text', {
+      key: key + ':arrow', staticStyle: S('fc-arrow', { left: arrowX + 'px', top: arrowY + 'px' })
+    }, arrow));
+  }
+  if (edge.kind === 'next' && from.node.route !== to.node.route) {
+    var labelX = Math.max(0, Math.min(FC_VIEW_WIDTH - 48, toCx - 24));
+    var labelY = Math.max(0, Math.min(FC_VIEW_HEIGHT - 12, toCy + 8));
+    children.push(h('text', {
+      key: key + ':label', staticStyle: S('fc-edge-label', { left: labelX + 'px', top: labelY + 'px' })
+    }, '跨线'));
+  }
+}
+
 export function renderFlowchart(vm, h) {
-  var chapters = fcChapters(vm.flowRoute);
-  var curChapter = chapters[vm.flowChapterIndex] || chapters[0] || 'CHAPTER --';
-  var nodes = vm.currentChapterNodes();
-  var layout = fcLayout(nodes);
+  fcEnsure(vm);
+  if (!vm._fcLayout) fcRefreshLayout(vm);
+  var layout = vm._fcLayout;
+  var nodeCount = vm.getFcRouteNodes().length;
 
-  var emaList = FC_EMA[vm.flowRoute] || [];
-  var emaIdx = vm.flowChapterIndex % Math.max(1, emaList.length);
-  var emaArt = emaList.length ? coverUrl('ema/ema_' + emaList[emaIdx] + '.jpg') : titleBgUrl();
+  var graphChildren = [];
+  for (var e = 0; e < layout.edges.length; e++) fcRenderEdge(vm, h, layout.edges[e], graphChildren);
+  for (var n = 0; n < layout.order.length; n++) {
+    var p = layout.placed[layout.order[n]];
+    var px = p.x + (vm.flowPanX || 0);
+    var py = p.y + (vm.flowPanY || 0);
+    if (px + FC_CARD_WIDTH > 0 && px < FC_VIEW_WIDTH && py + FC_CARD_HEIGHT > 0 && py < FC_VIEW_HEIGHT) {
+      graphChildren.push(fcRenderNode(vm, h, p));
+    }
+  }
 
-  var routeTabs = FC_ROUTES.map(function (r) {
-    var active = r === vm.flowRoute;
-    return h('div', {
-      key: r,
-      staticStyle: active ? S('fc-route-tab fc-route-tab-active') : S('fc-route-tab'),
-      on: { click: function () { vm.selectRoute(r); } }
-    }, [
-      h('text', { staticStyle: S('fc-route-tab-text') }, r)
-    ]);
-  });
-
-  var chapterIndicator = chapters.map(function (ch, idx) {
-    var active = idx === vm.flowChapterIndex;
-    return h('div', {
-      key: ch + '_' + idx,
-      staticStyle: active ? S('fc-dot fc-dot-active') : S('fc-dot'),
-      on: { click: function () { vm.flowChapterIndex = idx; vm.updateFlowPanMax(); } }
-    });
-  });
-
-  var edges = layout.edges.map(function (ed) {
-    return h('div', {
-      key: ed.key,
-      staticStyle: S('fc-edge', {
-        position: 'absolute',
-        left: ed.x + 'px',
-        top: ed.y + 'px',
-        width: ed.w + 'px',
-        height: ed.h + 'px',
-        borderBottomWidth: '2px',
-        borderBottomStyle: 'solid',
-        borderBottomColor: '#d4af37'
-      })
-    });
-  });
-
-  var nodeCards = nodes.map(function (n) {
-    var p = layout.pos[n.id] || { x: 0, y: 0 };
-    var selected = vm.flowSelectedNodeId === n.id;
-    var target = fcNodeTarget(n);
-    var hasTarget = !!target;
-    var cardClass = selected
-      ? 'fc-card fc-card-active'
-      : (hasTarget ? 'fc-card' : 'fc-card fc-card-disabled');
-
-    return h('div', {
-      key: n.id,
-      staticStyle: S(cardClass, {
-        position: 'absolute',
-        left: p.x + 'px',
-        top: p.y + 'px',
-        width: FC_CARD_WIDTH + 'px',
-        height: FC_CARD_HEIGHT + 'px'
-      }),
-      on: { click: function () { vm.onFcCardClick(n); } }
-    }, [
-      h('text', { staticStyle: S('fc-card-title') }, n.title || n.id),
-      h('text', { staticStyle: S('fc-card-sub') }, hasTarget ? ('第 ' + target.line + ' 句') : '详情')
-    ]);
-  });
-
-  var selectedNode = vm.flowSelectedNodeId ? FC_NODE_MAP[vm.flowSelectedNodeId] : null;
-  var selectedTarget = selectedNode ? fcNodeTarget(selectedNode) : null;
+  var routeButtons = [];
+  for (var r = 0; r < FC_ROUTES.length; r++) {
+    (function (route) {
+      routeButtons.push(h('div', {
+        key: route,
+        staticStyle: S(route === vm.flowRoute ? 'fc-route fc-route-active' : 'fc-route'),
+        on: { click: function () { vm.selectFcRoute(route); } }
+      }, [fcText(h, 'fc-route-text', route)]));
+    })(FC_ROUTES[r]);
+  }
 
   return h('div', { staticStyle: S('fc-root') }, [
     h('image', {
       staticStyle: S('fc-bg-img'),
-      attrs: { src: emaArt, resize: 'cover' }
+      attrs: { src: 'file:///userdisk/gal_data/sanoba_witch/bg/title_bg_v3.png' }
     }),
     h('div', { staticStyle: S('fc-header') }, [
-      h('div', {
-        staticStyle: S('fc-back-btn'),
-        on: { click: function () { vm.view = 'title'; } }
-      }, [
-        h('text', { staticStyle: S('fc-back-btn-text') }, '‹ 返回主菜单')
-      ]),
-      h('div', { staticStyle: S('fc-nav-row') }, [
-        h('div', {
-          staticStyle: S('fc-page-btn'),
-          on: { click: function () { vm.prevChapter(); } }
-        }, [
-          h('text', { staticStyle: S('fc-page-btn-text') }, '‹ 上一章')
-        ]),
-        h('text', { staticStyle: S('fc-chapter-title') }, curChapter),
-        h('div', {
-          staticStyle: S('fc-page-btn'),
-          on: { click: function () { vm.nextChapter(); } }
-        }, [
-          h('text', { staticStyle: S('fc-page-btn-text') }, '下一章 ›')
-        ])
-      ]),
-      h('div', { staticStyle: S('fc-dots-row') }, chapterIndicator)
+      fcText(h, 'fc-title', '剧情流程图'),
+      fcText(h, 'fc-header-chapter', vm.flowRoute + '线 · ' + nodeCount + ' 个节点 · 拖动查看完整路线'),
+      fcButton(h, 'fc-back', '返回标题', function () { vm.returnToTitleFromFc(); })
     ]),
-
-    h('div', { staticStyle: S('fc-body') }, [
-      h('div', {
-        staticStyle: S('fc-viewport'),
-        on: {
-          touchstart: function (e) { vm.onFcTouchStart(e); },
-          touchmove: function (e) { vm.onFcTouchMove(e); },
-          touchend: function () { vm.onFcTouchEnd(); }
-        }
-      }, [
-        h('div', {
-          staticStyle: S('fc-canvas', {
-            left: (vm.flowPanX || 0) + 'px',
-            top: (vm.flowPanY || 0) + 'px',
-            width: layout.w + 'px',
-            height: layout.h + 'px'
-          })
-        }, edges.concat(nodeCards))
-      ]),
-      h('div', { staticStyle: S('fc-routes-col') }, routeTabs)
+    h('div', {
+      staticStyle: S('fc-viewport'),
+      on: {
+        touchstart: function (event) { vm.onFcTouchStart(event); },
+        touchmove: function (event) { vm.onFcTouchMove(event); },
+        touchend: function (event) { vm.onFcTouchEnd(event); },
+        touchcancel: function () { vm.onFcTouchCancel(); }
+      }
+    }, [
+      h('div', { staticStyle: S('fc-canvas') }, graphChildren)
     ]),
-
-    h('div', { staticStyle: S('fc-footer') }, [
-      h('text', { staticStyle: S('fc-footer-notice') }, vm.flowNotice || '轻触节点查看详情，轻触右侧按钮可直接跳转进入剧情'),
-      selectedTarget ? h('div', {
-        staticStyle: S('fc-jump-btn'),
-        on: { click: function () { vm.jumpFromFlowchart(selectedTarget.line); } }
-      }, [
-        h('text', { staticStyle: S('fc-jump-btn-text') }, '跳转至本节 ›')
-      ]) : null
+    h('div', { staticStyle: S('fc-toolbar') }, [
+      fcText(h, 'fc-notice', layout.hasNext ? '拖动 / 方向键查看连线；轻触节点跳转剧情' : '该路线数据仅提供这一处节点'),
+      fcButton(h, 'fc-pan-button', '←', function () { vm.panFcBy(70, 0); }),
+      fcButton(h, 'fc-pan-button', '→', function () { vm.panFcBy(-70, 0); }),
+      fcButton(h, 'fc-pan-button', '↑', function () { vm.panFcBy(0, 45); }),
+      fcButton(h, 'fc-pan-button', '↓', function () { vm.panFcBy(0, -45); }),
+      fcButton(h, 'fc-reset', '复位', function () { vm.resetFcPan(); })
+    ]),
+    h('div', { staticStyle: S('fc-sidebar') }, [
+      h('div', { staticStyle: S('fc-route-list') }, routeButtons),
+      h('div', { staticStyle: S('fc-route-art') }, [
+        fcText(h, 'fc-route-caption', vm.flowRoute)
+      ])
     ])
   ]);
 }

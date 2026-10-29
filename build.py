@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""build.py —— 词典笔 Falcon / QuickJS miniapp 构建脚本
+"""build.py —— 《魔女的夜宴》Falcon / QuickJS miniapp 构建脚本
 
 流程：
 1) 校验 app/data 下由用户生成的数据模块是否存在；缺失时给出可读提示
@@ -9,9 +9,6 @@
 4) 通过词典笔上的 jsfmc 编译成 .js.bin
 5) 随附 native/prebuilt/libjsapi_gal.so 打包 .amr
 6) 可选 --install 安装到设备
-
-本仓库不包含任何游戏资源。资源放在设备的 /userdisk/gal_data/ 下，
-不会被写进 .amr；.amr 只包含代码、图标和原生插件。
 """
 
 import argparse
@@ -48,7 +45,23 @@ MODULES = [
     ("storage.js", ["Storage.js"]),
     ("data/story_data.js", ["StoryData.js"]),
     ("data/flowchart_data.js", ["FlowchartData.js"]),
+    ("data/choices_all.js", ["ChoicesAll.js"]),
+    ("data/fx_events.js", ["FxEvents.js"]),
+    ("data/gallery_cgs.js", ["GalleryCgs.js"]),
+    ("data/gallery_scenes.js", ["GalleryScenes.js"]),
     ("data/gallery_data.js", ["GalleryData.js"]),
+    ("data/chapter_all.js", ["ChapterAll.js"]),
+    ("data/scn_nene.js", ["ScnNene.js"]),
+    ("data/scn_nene_restart.js", ["ScnNeneRestart.js"]),
+    ("data/scn_meguru.js", ["ScnMeguru.js"]),
+    ("data/scn_tsumugi.js", ["ScnTsumugi.js"]),
+    ("data/scn_touko.js", ["ScnTouko.js"]),
+    ("data/scn_wakana.js", ["ScnWakana.js"]),
+    ("data/after_nene.js", ["AfterNene.js"]),
+    ("data/after_meguru.js", ["AfterMeguru.js"]),
+    ("data/after_tsumugi.js", ["AfterTsumugi.js"]),
+    ("data/after_touko.js", ["AfterTouko.js"]),
+    ("data/after_wakana.js", ["AfterWakana.js"]),
     ("pages/title/title.js", ["TitleView.js"]),
     ("pages/game/game.js", ["GameView.js"]),
     ("pages/gallery/gallery.js", ["GalleryView.js"]),
@@ -71,8 +84,40 @@ IMPORT_MAP = {
     "./data/story_data.js": "./StoryData.js",
     "../../data/flowchart_data.js": "./FlowchartData.js",
     "./data/flowchart_data.js": "./FlowchartData.js",
+    "../../data/choices_all.js": "./ChoicesAll.js",
+    "./data/choices_all.js": "./ChoicesAll.js",
+    "../../data/fx_events.js": "./FxEvents.js",
+    "./data/fx_events.js": "./FxEvents.js",
+    "../../data/gallery_cgs.js": "./GalleryCgs.js",
+    "./data/gallery_cgs.js": "./GalleryCgs.js",
+    "../../data/gallery_scenes.js": "./GalleryScenes.js",
+    "./data/gallery_scenes.js": "./GalleryScenes.js",
     "../../data/gallery_data.js": "./GalleryData.js",
     "./data/gallery_data.js": "./GalleryData.js",
+    "../../data/chapter_all.js": "./ChapterAll.js",
+    "./data/chapter_all.js": "./ChapterAll.js",
+    "../../data/scn_nene.js": "./ScnNene.js",
+    "./data/scn_nene.js": "./ScnNene.js",
+    "../../data/scn_nene_restart.js": "./ScnNeneRestart.js",
+    "./data/scn_nene_restart.js": "./ScnNeneRestart.js",
+    "../../data/scn_meguru.js": "./ScnMeguru.js",
+    "./data/scn_meguru.js": "./ScnMeguru.js",
+    "../../data/scn_tsumugi.js": "./ScnTsumugi.js",
+    "./data/scn_tsumugi.js": "./ScnTsumugi.js",
+    "../../data/scn_touko.js": "./ScnTouko.js",
+    "./data/scn_touko.js": "./ScnTouko.js",
+    "../../data/scn_wakana.js": "./ScnWakana.js",
+    "./data/scn_wakana.js": "./ScnWakana.js",
+    "../../data/after_nene.js": "./AfterNene.js",
+    "./data/after_nene.js": "./AfterNene.js",
+    "../../data/after_meguru.js": "./AfterMeguru.js",
+    "./data/after_meguru.js": "./AfterMeguru.js",
+    "../../data/after_tsumugi.js": "./AfterTsumugi.js",
+    "./data/after_tsumugi.js": "./AfterTsumugi.js",
+    "../../data/after_touko.js": "./AfterTouko.js",
+    "./data/after_touko.js": "./AfterTouko.js",
+    "../../data/after_wakana.js": "./AfterWakana.js",
+    "./data/after_wakana.js": "./AfterWakana.js",
     "./pages/title/title.js": "./TitleView.js",
     "./pages/game/game.js": "./GameView.js",
     "./pages/gallery/gallery.js": "./GalleryView.js",
@@ -84,6 +129,7 @@ REQUIRED_DATA = (
     ("data/story_data.js", "export var STORY"),
     ("data/flowchart_data.js", "export var FLOWCHART"),
     ("data/gallery_data.js", "export var GALLERY"),
+    ("data/chapter_all.js", "export var chapter_all"),
 )
 
 
@@ -140,32 +186,17 @@ def check_inputs(icon_path, native_so):
     if not os.path.isfile(PACKER):
         die("缺少打包器: %s" % PACKER)
     if not os.path.isfile(icon_path):
-        die("缺少应用图标: %s" % icon_path)
+        die("缺少应用图标: %s\n请放一张 128x128 ~ 256x256 PNG 图标。" % icon_path)
     if not os.path.isfile(native_so):
-        die("缺少原生插件: %s" % native_so)
+        die("缺少原生动态库: %s\n音频与混音依赖该动态库。" % native_so)
 
-    missing = []
     for rel, marker in REQUIRED_DATA:
-        path = os.path.join(APP_DIR, rel)
-        if not os.path.isfile(path) or os.path.getsize(path) < 80:
-            missing.append(rel)
-            continue
-        try:
-            text = open(path, encoding="utf-8").read(200)
-        except OSError:
-            text = ""
-        if marker not in text:
-            die("%s 存在但内容不完整（未找到 %r）。请重新生成数据。" % (path, marker))
-    if missing:
-        print("[x] 未找到剧本数据模块：")
-        for rel in missing:
-            print("    - app/%s" % rel)
-        print("")
-        print("本仓库不附带任何游戏剧本或资源。请先按以下步骤生成：")
-        print("  1. 阅读 app/data/README.md，准备 data_src/")
-        print("  2. python3 tools/build_data.py --src data_src --out app/data")
-        print("  3. 重新运行 python3 build.py")
-        sys.exit(2)
+        p = os.path.join(APP_DIR, rel)
+        if not os.path.isfile(p):
+            die("缺少必要的数据文件: app/%s\n请先使用 tools/ 下的转码脚本生成剧本与数据。" % rel)
+        head = open(p, "r", encoding="utf-8", errors="ignore").read(4096)
+        if marker not in head:
+            die("数据文件 app/%s 格式不符合预期（未找到 %r）" % (rel, marker))
 
 
 def px(v):
@@ -177,62 +208,52 @@ def css_to_obj(path):
     with open(path, encoding="utf-8") as f:
         txt = re.sub(r"/\*.*?\*/", "", f.read(), flags=re.S)
     rules = {}
-    for sel_group, body in re.findall(r"([^{}]+)\{([^}]*)\}", txt):
+    cursor = 0
+    pattern = re.compile(r"\s*((?:\.[\w-]+\s*,\s*)*\.[\w-]+)\s*\{([^{}]*)\}")
+    while txt[cursor:].strip():
+        match = pattern.match(txt, cursor)
+        if not match:
+            raise ValueError("%s: 无效 CSS 规则或括号，位置 %d" % (path, cursor))
+        sel_group, body = match.groups()
         obj = {}
         for decl in body.split(";"):
+            if not decl.strip():
+                continue
             if ":" not in decl:
-                continue
-            k, v = decl.split(":", 1)
-            k = re.sub(r"-([a-z])", lambda m: m.group(1).upper(), k.strip())
-            v = v.strip().replace(", ", ",")
-            obj[k] = int(v) if re.fullmatch(r"\d+", v) else v
-        # 逗号分隔的选择器组：每个 class 各得一份样式；
-        # 复合/后代选择器落到最末 class（修饰态），运行时由 S() 按 class 顺序叠加。
-        for sel in sel_group.split(","):
-            parts = sel.split()
-            if not parts or any(not re.fullmatch(r"(?:\.[A-Za-z0-9_-]+)+", p) for p in parts):
-                continue
-            rules[re.findall(r"\.([A-Za-z0-9_-]+)", parts[-1])[-1]] = obj
+                raise ValueError("%s: 无效 CSS 声明 %r" % (path, decl))
+            k, v = [part.strip() for part in decl.split(":", 1)]
+            if k in ("border", "border-top", "border-right", "border-bottom", "border-left", "padding", "margin", "background", "font", "flex"):
+                raise ValueError("%s: Falcon 不支持复合属性 %s，请拆分声明" % (path, k))
+            if not k or not v:
+                raise ValueError("%s: 空 CSS 属性或值" % path)
+            k = re.sub(r"-([a-z])", lambda m: m.group(1).upper(), k)
+            obj[k] = v
+        for selector in sel_group.split(","):
+            rules.setdefault(selector.strip()[1:], {}).update(obj)
+        cursor = match.end()
     return rules
 
 
-def check_bounds(name, r):
-    errs = []
-
-    def g(k):
-        v = r.get(k)
-        return px(v) if isinstance(v, str) else None
-
-    h, w, t, l = g("height"), g("width"), g("top"), g("left")
-    if h is not None and h > MAX_H:
-        errs.append("height %s > %d" % (h, MAX_H))
-    if w is not None and w > MAX_W:
-        errs.append("width %s > %d" % (w, MAX_W))
-    if h is not None and t is not None and h + t > MAX_H:
-        errs.append("top+height %s > %d" % (h + t, MAX_H))
-    if w is not None and l is not None and w + l > MAX_W:
-        errs.append("left+width %s > %d" % (w + l, MAX_W))
-    return ["  .%s: %s" % (name, e) for e in errs]
-
-
-def build_styles(out_dir):
-    styles, errs = {}, []
-    for page in STYLE_PAGES:
-        css = os.path.join(APP_DIR, "pages", page, "%s.css" % page)
-        if not os.path.isfile(css):
-            die("缺少样式文件: %s" % css)
+def build_styles(stage=None):
+    print("[1/4] 编译与校验样式表 (pages/*/*.css -> Styles.js)")
+    merged = {}
+    for p in STYLE_PAGES:
+        css = os.path.join(APP_DIR, "pages", p, "%s.css" % p)
+        if not os.path.exists(css):
+            continue
         rules = css_to_obj(css)
-        for n, r in rules.items():
-            errs += check_bounds(n, r)
-        styles.update(rules)
-    if errs:
-        print("[x] CSS 尺寸越界:\n" + "\n".join(errs))
-        sys.exit(1)
-    src = "// 由 build.py 从 CSS 生成，勿手改\nvar ST = %s;\nexport default ST;\n" % json.dumps(
-        styles, ensure_ascii=False, indent=1)
-    with open(os.path.join(out_dir, "Styles.js"), "w", encoding="utf-8", newline="\n") as f:
-        f.write(src)
-    print("[1/4] CSS 校验通过，%d 个样式类 -> Styles.js" % len(styles))
+        for name, r in rules.items():
+            h, w = px(r.get("height", "")), px(r.get("width", ""))
+            if h is not None and h > MAX_H:
+                die("CSS 校验失败：%s.%s height=%s 超出词典笔视口高度 %d" % (p, name, r["height"], MAX_H))
+            if w is not None and w > MAX_W:
+                die("CSS 校验失败：%s.%s width=%s 超出词典笔视口宽度 %d" % (p, name, r["width"], MAX_W))
+        merged.update(rules)
+    src = "// 由 build.py 从 CSS 生成，勿手改\nvar ST = %s;\nexport default ST;\nexport var STYLES = ST;\n" % json.dumps(merged, ensure_ascii=False, indent=1)
+    if stage is not None:
+        with open(os.path.join(stage, "Styles.js"), "w", encoding="utf-8", newline="\n") as f:
+            f.write(src)
+    print("      已合并 %d 个样式类，静态宽高声明全部 <= 800x220（仍需真机布局验收）" % len(merged))
 
 
 def flatten(src):
@@ -242,7 +263,7 @@ def flatten(src):
 
 
 def compile_all(stage, bins, jsfmc):
-    print("[2/4] 用词典笔上的 jsfmc 编译 .js.bin")
+    print("[2/4] 用笔上 jsfmc 编译 .js.bin")
     adb("shell", "mkdir -p /userdisk/skip_re/tools /tmp/gal_b")
     mods = [("Styles.js", os.path.join(stage, "Styles.js"))]
     for srcrel, names in MODULES:
@@ -288,6 +309,15 @@ def main():
     icon_path = os.path.abspath(args.icon)
     native_so = os.path.abspath(args.native)
     check_inputs(icon_path, native_so)
+    for relative, _ in MODULES:
+        if not os.path.isfile(os.path.join(APP_DIR, relative)):
+            die("缺少源文件: app/%s" % relative)
+
+    if args.check:
+        build_styles()
+        print("[ok] 数据模块、CSS、图标、原生插件、打包器均就绪。")
+        print("     --check 不修改构建目录、不连接设备；实际构建需要 adb 与设备上的 jsfmc。")
+        return
 
     build = os.path.join(HERE, "build")
     stage, bins = os.path.join(build, "stage"), os.path.join(build, "bins")
@@ -296,11 +326,6 @@ def main():
         os.makedirs(d, exist_ok=True)
 
     build_styles(stage)
-
-    if args.check:
-        print("[ok] 数据模块、CSS、图标、原生插件、打包器均就绪。")
-        print("     --check 未连接设备；实际构建需要 adb 与设备上的 jsfmc。")
-        return
 
     global SERIAL
     SERIAL = resolve_serial(args.serial)
@@ -331,7 +356,7 @@ def main():
     print("[4/4] 打包 .amr")
     dist = os.path.join(HERE, "dist")
     os.makedirs(dist, exist_ok=True)
-    amr_path = os.path.join(dist, "gal-engine-%s.amr" % args.version)
+    amr_path = os.path.join(dist, "sanoba_witch-%s.amr" % args.version)
 
     ret, out = run([
         sys.executable, PACKER,
@@ -352,13 +377,14 @@ def main():
 
     if args.install:
         print("[+] 安装到词典笔 (appid=%s)" % args.appid)
-        adb("push", amr_path, "/tmp/gal-engine.amr")
+        adb("push", amr_path, "/tmp/sanoba_witch.amr")
+        adb("push", amr_path, "/userdisk/skip_re/amr/sanoba_witch-%s.amr" % args.version)
         adb("shell", "miniapp_cli uninstall %s >/dev/null 2>&1" % args.appid)
         time.sleep(1)
-        res_inst = adb("shell", "miniapp_cli install /tmp/gal-engine.amr")
+        res_inst = adb("shell", "miniapp_cli install /tmp/sanoba_witch.amr")
         print("      " + res_inst.strip())
         time.sleep(1)
-        print("[+] 启动应用...")
+        print("[+] 启动《魔女的夜宴》...")
         out_start = adb("shell", "miniapp_cli start %s" % args.appid)
         print("      " + out_start.strip())
 

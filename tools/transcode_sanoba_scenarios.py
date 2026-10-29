@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""transcode_sanoba_scenarios.py —— 《魔女的夜宴》全量 62 剧本转码与引擎数据契约生成工具
+"""transcode_sanoba_scenarios.py —— 《魔女的夜宴》全量 101 剧本转码与引擎数据契约生成工具
 
-将 500GB 硬盘中反编译的 62 个全量剧本转码为 RibbonEngine 规范的 10 列台词契约：
-- app/data/story_data.js
-- app/data/flowchart_data.js
-- app/data/gallery_data.js
+将 500GB 硬盘中反编译的 101 个全量剧本转码为 RibbonEngine 规范的 10 列台词契约：
+- app/data/story_data.js (包含 main, nene, nene_restart, meguru, tsumugi, touko, wakana 以及 5 大女主角 afterstory)
+- app/data/flowchart_data.js (包含时空回溯拓扑)
+- app/data/gallery_data.js (4-Tab 鉴赏系统)
 """
 
 import os
@@ -17,7 +17,7 @@ import glob
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(PROJECT_DIR, "app", "data")
 SCN_JSON_DIR = os.path.join(PROJECT_DIR, "scenario_json")
-ASSETS_DIR = "/Volumes/500GB/sanoba_witch_assets"
+ASSETS_DIR = "/Volumes/500GB/魔女的夜宴" if os.path.exists("/Volumes/500GB/魔女的夜宴") else "/Volumes/500GB/sanoba_witch_assets"
 
 os.makedirs(DATA_DIR, exist_ok=True)
 
@@ -72,60 +72,81 @@ def clean_text(txt):
     if not txt:
         return ""
     txt = txt.replace("\r\n", "\n").replace("\r", "\n")
-    # 清理多余控制字符
     txt = re.sub(r"\\n", "\n", txt)
     txt = re.sub(r"\\k\[\d+\]", "", txt)
     return txt.strip()
 
 def categorize_files(file_list):
-    """将 62 个剧本分类到路线"""
+    """将全量 101 个剧本精确分类到主线、各角色线、重启二周目与日后谈"""
     groups = {
         "main": [],
         "nene": [],
+        "nene_restart": [],
         "meguru": [],
         "tsumugi": [],
         "touko": [],
         "wakana": [],
         "after_nene": [],
         "after_meguru": [],
-        "after_touko": []
+        "after_tsumugi": [],
+        "after_touko": [],
+        "after_wakana": []
     }
     
-    for fname in sorted(file_list):
-        if not fname.endswith(".ks.json") or fname.startswith("."):
+    for fpath in sorted(file_list):
+        base = os.path.basename(fpath)
+        if not base.endswith(".ks.json") or base.startswith("."):
             continue
-        base = os.path.basename(fname)
+
         m = re.match(r"^(\d+)", base)
         num_str = m.group(1) if m else ""
         num = int(num_str) if num_str.isdigit() else 999
 
+        # 共通线 001 ~ 019
         if num < 20:
-            groups["main"].append(fname)
+            groups["main"].append(fpath)
+        # 020: 各女主路线前置派对
         elif num == 20:
             if "寧々" in base:
-                groups["nene"].append(fname)
+                groups["nene"].append(fpath)
+            elif "めくる" in base or "めぐる" in base:
+                groups["meguru"].append(fpath)
+            elif "紬" in base:
+                groups["tsumugi"].append(fpath)
             elif "憧子" in base:
-                groups["touko"].append(fname)
+                groups["touko"].append(fpath)
             else:
-                groups["main"].append(fname)
-        elif 100 <= num <= 116:
-            groups["nene"].append(fname)
+                groups["main"].append(fpath)
+        # 宁宁线
+        elif 101 <= num <= 109:
+            groups["nene"].append(fpath)
+        elif 110 <= num <= 116:
+            # 110: 宁宁视角重启独白; 111~116: 二周目重启本篇与尾声
+            groups["nene_restart"].append(fpath)
         elif num == 117:
-            groups["after_nene"].append(fname)
-        elif 200 <= num <= 218:
-            groups["meguru"].append(fname)
+            groups["after_nene"].append(fpath)
+        # 因幡巡线
+        elif 201 <= num <= 218:
+            groups["meguru"].append(fpath)
         elif num == 219:
-            groups["after_meguru"].append(fname)
-        elif 300 <= num <= 399:
-            groups["tsumugi"].append(fname)
-        elif 400 <= num <= 411:
-            groups["touko"].append(fname)
+            groups["after_meguru"].append(fpath)
+        # 椎名紬线
+        elif 301 <= num <= 320:
+            groups["tsumugi"].append(fpath)
+        elif num == 321:
+            groups["after_tsumugi"].append(fpath)
+        # 户隐憧子线
+        elif 401 <= num <= 411:
+            groups["touko"].append(fpath)
         elif num == 412:
-            groups["after_touko"].append(fname)
-        elif 500 <= num <= 599:
-            groups["wakana"].append(fname)
+            groups["after_touko"].append(fpath)
+        # 假屋和奏线
+        elif 500 <= num <= 507:
+            groups["wakana"].append(fpath)
+        elif num == 508:
+            groups["after_wakana"].append(fpath)
         else:
-            groups["main"].append(fname)
+            groups["main"].append(fpath)
 
     return groups
 
@@ -151,7 +172,7 @@ def parse_scenario_file(filepath, start_line_id, route_key):
         elif sc.get("label"):
             chapter_title = str(sc.get("label")).lstrip("*")
 
-        # 检查是否是章节入口
+        # 记录章节入口行号
         if chapter_title not in chapters_out:
             chapters_out[chapter_title] = line_id
 
@@ -269,6 +290,7 @@ def transcode_all():
         "main": [],
         "routes": {
             "nene": [],
+            "nene_restart": [],
             "meguru": [],
             "tsumugi": [],
             "touko": [],
@@ -277,7 +299,9 @@ def transcode_all():
         "after": {
             "nene": [],
             "meguru": [],
-            "touko": []
+            "tsumugi": [],
+            "touko": [],
+            "wakana": []
         },
         "afterMeta": [
             {
@@ -297,14 +321,38 @@ def transcode_all():
                 "cover": "ev201a"
             },
             {
+                "key": "tsumugi",
+                "name": "椎名 紬",
+                "chapter": "AFTER TSUMUGI",
+                "title": "女仆与心跳午后",
+                "voice": "tsu321_001",
+                "cover": "ev301a"
+            },
+            {
                 "key": "touko",
                 "name": "户隐 憧子",
                 "chapter": "AFTER TOUKO",
                 "title": "学姐的专属告白",
                 "voice": "tou412_001",
                 "cover": "ev401a"
+            },
+            {
+                "key": "wakana",
+                "name": "假屋 和奏",
+                "chapter": "AFTER WAKANA",
+                "title": "摇滚与两人的旋律",
+                "voice": "wak508_001",
+                "cover": "ev501a"
             }
         ],
+        "routeClearKeys": {
+            "nene": "nene",
+            "nene_restart": "nene_restart",
+            "meguru": "meguru",
+            "tsumugi": "tsumugi",
+            "touko": "touko",
+            "wakana": "wakana"
+        },
         "choices": [],
         "fx": {},
         "meta": {
@@ -325,8 +373,8 @@ def transcode_all():
         story_obj["choices"].extend(choices)
         chapter_starts.update(chapters)
 
-    # 2. 转换各个人线
-    route_keys = ["nene", "meguru", "tsumugi", "touko", "wakana"]
+    # 2. 转换各个人线与二周目重启线
+    route_keys = ["nene", "nene_restart", "meguru", "tsumugi", "touko", "wakana"]
     for rk in route_keys:
         r_line_id = 0
         for f in groups[rk]:
@@ -336,11 +384,13 @@ def transcode_all():
             for c_title, l_num in chapters.items():
                 chapter_starts[f"{rk}_{c_title}"] = l_num
 
-    # 3. 转换后日谈
+    # 3. 转换日后谈 (5 位女主全覆盖)
     after_mapping = [
         ("after_nene", "nene"),
         ("after_meguru", "meguru"),
-        ("after_touko", "touko")
+        ("after_tsumugi", "tsumugi"),
+        ("after_touko", "touko"),
+        ("after_wakana", "wakana")
     ]
     for src_grp, target_key in after_mapping:
         a_line_id = 0
@@ -348,8 +398,8 @@ def transcode_all():
             lines, choices, chapters, a_line_id = parse_scenario_file(f, a_line_id, f"after_{target_key}")
             story_obj["after"][target_key].extend(lines)
 
-    # 4. 生成流程图节点
-    # 共通线初始节点
+    # 4. 生成流程图节点（精心设计时空回溯分支）
+    # (1) 共通序章
     flowchart_nodes.append({
         "id": "node_prologue",
         "type": "chapter",
@@ -357,27 +407,138 @@ def transcode_all():
         "chapter": "共通序章",
         "title": "不可思议的契机",
         "targetLine": 0,
-        "next": "node_choice_005"
+        "next": "node_choice_1"
     })
 
-    # 为每个收集到的选择支生成节点
+    # 为共通线选择支构建序列
     prev_node_id = "node_prologue"
-    for idx, ch in enumerate(story_obj["choices"][:12]):
+    main_choices = [c for c in story_obj["choices"] if c.get("route") == "main"]
+    for idx, ch in enumerate(main_choices[:12]):
         c_node_id = f"node_choice_{idx+1}"
+        opt_title = ch["options"][0]["text"] if ch["options"] else "决断"
         flowchart_nodes.append({
             "id": c_node_id,
             "type": "select",
-            "route": ch.get("route", "main"),
+            "route": "main",
             "chapter": f"选择支 {idx+1}",
-            "title": ch["options"][0]["text"] if ch["options"] else "决断",
+            "title": opt_title,
             "targetLine": ch.get("targetLine", 0),
-            "next": f"node_branch_{idx+1}"
+            "next": f"node_choice_{idx+2}" if idx < 11 else "node_nene_party"
         })
         flowchart_chain[prev_node_id] = c_node_id
         prev_node_id = c_node_id
 
-    # 5. 生成个人线终点节点
-    for rk, rname in [("nene", "宁宁线 真实"), ("meguru", "巡线 依偎"), ("tsumugi", "紬线 心意"), ("touko", "憧子线 誓言"), ("wakana", "和奏线 陪伴")]:
+    # (2) 宁宁一周目通常线节点
+    nene_len = len(story_obj["routes"]["nene"])
+    flowchart_nodes.extend([
+        {
+            "id": "node_nene_party",
+            "type": "chapter",
+            "route": "nene",
+            "chapter": "宁宁线 序",
+            "title": "庆功派对的私语",
+            "targetLine": 0,
+            "next": "node_nene_confess"
+        },
+        {
+            "id": "node_nene_confess",
+            "type": "chapter",
+            "route": "nene",
+            "chapter": "宁宁线 承",
+            "title": "心意倾吐与契约",
+            "targetLine": chapter_starts.get("nene_chapter　5-3", 1314),
+            "next": "node_nene_resolve"
+        },
+        {
+            "id": "node_nene_resolve",
+            "type": "chapter",
+            "route": "nene",
+            "chapter": "宁宁线 转",
+            "title": "不可抗拒的离别决断",
+            "targetLine": chapter_starts.get("nene_chapter　7-3", 6370),
+            "next": "node_nene_farewell"
+        },
+        {
+            "id": "node_nene_farewell",
+            "type": "chapter",
+            "route": "nene",
+            "chapter": "宁宁线 结",
+            "title": "最后一次告别约会",
+            "targetLine": chapter_starts.get("nene_chapter　7-4", 6620),
+            "next": "node_nene_normal_end"
+        },
+        {
+            "id": "node_nene_normal_end",
+            "type": "chapter",
+            "route": "nene",
+            "chapter": "通常结局",
+            "title": "记忆抹除 · 迷雾中的日常",
+            "targetLine": max(0, nene_len - 1),
+            "next": "node_restart_monologue" # 时空回溯关键跳转！
+        }
+    ])
+    flowchart_chain["node_nene_party"] = "node_nene_confess"
+    flowchart_chain["node_nene_confess"] = "node_nene_resolve"
+    flowchart_chain["node_nene_resolve"] = "node_nene_farewell"
+    flowchart_chain["node_nene_farewell"] = "node_nene_normal_end"
+    flowchart_chain["node_nene_normal_end"] = "node_restart_monologue"
+
+    # (3) 宁宁二周目重启线（RESTART）节点
+    restart_len = len(story_obj["routes"]["nene_restart"])
+    flowchart_nodes.extend([
+        {
+            "id": "node_restart_monologue",
+            "type": "chapter",
+            "route": "nene_restart",
+            "chapter": "二周目重启",
+            "title": "宁宁视角 · 独白扣动扳机",
+            "targetLine": 0,
+            "next": "node_restart_begin"
+        },
+        {
+            "id": "node_restart_begin",
+            "type": "chapter",
+            "route": "nene_restart",
+            "chapter": "时空回溯",
+            "title": "柊史视角 · 镜像初秋再会",
+            "targetLine": chapter_starts.get("nene_restart_chapter　1-1", 355),
+            "next": "node_restart_club"
+        },
+        {
+            "id": "node_restart_club",
+            "type": "chapter",
+            "route": "nene_restart",
+            "chapter": "深层羁绊",
+            "title": "超自然研究部的奇迹重聚",
+            "targetLine": chapter_starts.get("nene_restart_chapter　2-5", 2525),
+            "next": "node_restart_change"
+        },
+        {
+            "id": "node_restart_change",
+            "type": "chapter",
+            "route": "nene_restart",
+            "chapter": "命运转变",
+            "title": "改写的轨迹与誓约",
+            "targetLine": chapter_starts.get("nene_restart_chapter　3-1", 4373),
+            "next": "node_restart_true_end"
+        },
+        {
+            "id": "node_restart_true_end",
+            "type": "chapter",
+            "route": "nene_restart",
+            "chapter": "真结局",
+            "title": "TRUE END · 永恒相守",
+            "targetLine": max(0, restart_len - 1),
+            "next": None
+        }
+    ])
+    flowchart_chain["node_restart_monologue"] = "node_restart_begin"
+    flowchart_chain["node_restart_begin"] = "node_restart_club"
+    flowchart_chain["node_restart_club"] = "node_restart_change"
+    flowchart_chain["node_restart_change"] = "node_restart_true_end"
+
+    # (4) 其他 4 位女主终章节点
+    for rk, rname in [("meguru", "巡线 依偎"), ("tsumugi", "紬线 心意"), ("touko", "憧子线 誓言"), ("wakana", "和奏线 陪伴")]:
         end_node_id = f"node_end_{rk}"
         flowchart_nodes.append({
             "id": end_node_id,
@@ -390,10 +551,11 @@ def transcode_all():
         })
 
     flowchart_obj = {
-        "routes": ["main", "nene", "meguru", "tsumugi", "touko", "wakana"],
+        "routes": ["main", "nene", "nene_restart", "meguru", "tsumugi", "touko", "wakana"],
         "routeScenario": {
             "main": "main",
             "nene": "nene",
+            "nene_restart": "nene_restart",
             "meguru": "meguru",
             "tsumugi": "tsumugi",
             "touko": "touko",
@@ -403,6 +565,7 @@ def transcode_all():
         "routeArt": {
             "main": "空_青空",
             "nene": "ev101a",
+            "nene_restart": "ev102a",
             "meguru": "ev201a",
             "tsumugi": "ev301a",
             "touko": "ev401a",
@@ -413,8 +576,7 @@ def transcode_all():
         "chain": flowchart_chain
     }
 
-    # 6. 生成画廊鉴赏数据 gallery_data.js
-    # 扫描已有的 CG 与 BGM
+    # 5. 画廊鉴赏数据 gallery_data.js
     cg_files = []
     cg_dir = os.path.join(ASSETS_DIR, "cg", "evimage")
     if os.path.exists(cg_dir):
@@ -431,19 +593,21 @@ def transcode_all():
                 stem = os.path.splitext(f)[0]
                 bgm_files.append(stem)
 
+    # ev1xx/2xx...6xx is the original numbered CG family. Classify by the
+    # family digit, never by "contains a digit": ev201a contains "1" but is
+    # Meguru's CG, and the old substring rule put every such item in Nene.
+    cg_group_by_family = {
+        "1": "nene",
+        "2": "meguru",
+        "3": "tsumugi",
+        "4": "touko",
+        "5": "wakana",
+        "6": "main"
+    }
     cg_list = []
-    for idx, c in enumerate(cg_files[:80]):
-        group = "main"
-        if "1" in c:
-            group = "nene"
-        elif "2" in c:
-            group = "meguru"
-        elif "3" in c:
-            group = "tsumugi"
-        elif "4" in c:
-            group = "touko"
-        elif "5" in c:
-            group = "wakana"
+    for idx, c in enumerate(cg_files):
+        family = c[2] if len(c) >= 3 and c.startswith("ev") else "6"
+        group = cg_group_by_family.get(family, "main")
         cg_list.append({
             "id": f"cg_{idx+1}",
             "code": f"CG{idx+1:02d}",
@@ -454,7 +618,7 @@ def transcode_all():
         })
 
     bgm_list = []
-    for idx, b in enumerate(bgm_files[:35]):
+    for idx, b in enumerate(bgm_files[:40]):
         bgm_list.append({
             "id": b,
             "code": f"BGM{idx+1:02d}",
@@ -497,6 +661,14 @@ def transcode_all():
                 "variants": ["ev102a"]
             },
             {
+                "id": "scene_nene_restart",
+                "title": "回溯的永恒重逢",
+                "group": "nene",
+                "route": "nene_restart",
+                "cover": "ev102a",
+                "variants": ["ev102a"]
+            },
+            {
                 "id": "scene_meguru_01",
                 "title": "秘密合影",
                 "group": "meguru",
@@ -531,37 +703,122 @@ def transcode_all():
         "bgm": bgm_list
     }
 
-    # 7. 写入各数据文件
-    story_path = os.path.join(DATA_DIR, "story_data.js")
-    flowchart_path = os.path.join(DATA_DIR, "flowchart_data.js")
-    gallery_path = os.path.join(DATA_DIR, "gallery_data.js")
+    # 6. 写入各独立数据模块（按需解耦，避免 QuickJS 启动时 OOM）
+    os.makedirs(DATA_DIR, exist_ok=True)
 
-    print("[*] Writing story_data.js...")
-    with open(story_path, "w", encoding="utf-8") as fp:
-        fp.write("// story_data.js —— 《魔女的夜宴》全量官方中文剧情数据\n")
-        fp.write("export var STORY = ")
-        json.dump(story_obj, fp, ensure_ascii=False)
+    # (1) 共通线
+    with open(os.path.join(DATA_DIR, "chapter_all.js"), "w", encoding="utf-8") as fp:
+        fp.write("// chapter_all.js —— 《魔女的夜宴》共通线全量剧本\n")
+        fp.write("export var chapter_all = ")
+        json.dump(story_obj["main"], fp, ensure_ascii=False)
         fp.write(";\n")
 
-    print("[*] Writing flowchart_data.js...")
-    with open(flowchart_path, "w", encoding="utf-8") as fp:
+    # (2) 5 位女主角个人线 + 宁宁二周目
+    route_file_map = {
+        "nene": "scn_nene.js",
+        "nene_restart": "scn_nene_restart.js",
+        "meguru": "scn_meguru.js",
+        "tsumugi": "scn_tsumugi.js",
+        "touko": "scn_touko.js",
+        "wakana": "scn_wakana.js"
+    }
+    for rk, fname in route_file_map.items():
+        var_name = f"scn_{rk}"
+        with open(os.path.join(DATA_DIR, fname), "w", encoding="utf-8") as fp:
+            fp.write(f"// {fname} —— 《魔女的夜宴》{rk} 个人线剧本\n")
+            fp.write(f"export var {var_name} = ")
+            json.dump(story_obj["routes"].get(rk, []), fp, ensure_ascii=False)
+            fp.write(";\n")
+
+    # (3) 5 位女主角后日谈
+    for ak in ["nene", "meguru", "tsumugi", "touko", "wakana"]:
+        fname = f"after_{ak}.js"
+        var_name = f"after_{ak}"
+        with open(os.path.join(DATA_DIR, fname), "w", encoding="utf-8") as fp:
+            fp.write(f"// {fname} —— 《魔女的夜宴》{ak} 专属后日谈剧本\n")
+            fp.write(f"export var {var_name} = ")
+            json.dump(story_obj["after"].get(ak, []), fp, ensure_ascii=False)
+            fp.write(";\n")
+
+    # (4) 选项合集与分支跳跃
+    with open(os.path.join(DATA_DIR, "choices_all.js"), "w", encoding="utf-8") as fp:
+        fp.write("// choices_all.js —— 《魔女的夜宴》全量选择支集合\n")
+        fp.write("export var choices_all = ")
+        json.dump(story_obj["choices"], fp, ensure_ascii=False)
+        fp.write(";\n")
+
+    # (5) 特效事件
+    fx_events = {
+        "main": {},
+        "nene": {},
+        "nene_restart": {},
+        "meguru": {},
+        "tsumugi": {},
+        "touko": {},
+        "wakana": {}
+    }
+    with open(os.path.join(DATA_DIR, "fx_events.js"), "w", encoding="utf-8") as fp:
+        fp.write("// fx_events.js —— 《魔女的夜宴》转场与屏幕震动/闪光特效映射表\n")
+        fp.write("export var fx_events = ")
+        json.dump(fx_events, fp, ensure_ascii=False)
+        fp.write(";\nexport default fx_events;\n")
+
+    # (6) 流程图拓扑
+    with open(os.path.join(DATA_DIR, "flowchart_data.js"), "w", encoding="utf-8") as fp:
         fp.write("// flowchart_data.js —— 《魔女的夜宴》流程图拓扑与选择支\n")
         fp.write("export var FLOWCHART = ")
         json.dump(flowchart_obj, fp, ensure_ascii=False)
-        fp.write(";\n")
+        fp.write(";\nexport var flowchart_data = FLOWCHART;\nexport var choices = FLOWCHART.nodes.filter(function(n){ return n.type === 'select'; });\n")
 
-    print("[*] Writing gallery_data.js...")
-    with open(gallery_path, "w", encoding="utf-8") as fp:
+    # (7) 鉴赏数据
+    with open(os.path.join(DATA_DIR, "gallery_data.js"), "w", encoding="utf-8") as fp:
         fp.write("// gallery_data.js —— 《魔女的夜宴》4-Tab 鉴赏数据（CG/回忆/立绘/音乐盒）\n")
         fp.write("export var GALLERY = ")
         json.dump(gallery_obj, fp, ensure_ascii=False)
+        fp.write(";\n")
+    with open(os.path.join(DATA_DIR, "gallery_cgs.js"), "w", encoding="utf-8") as fp:
+        fp.write("// gallery_cgs.js —— CG 列表\n")
+        fp.write("export var gallery_cgs = ")
+        json.dump(cg_list, fp, ensure_ascii=False)
+        fp.write(";\n")
+    with open(os.path.join(DATA_DIR, "gallery_scenes.js"), "w", encoding="utf-8") as fp:
+        fp.write("// gallery_scenes.js —— 场景回忆列表\n")
+        fp.write("export var gallery_scenes = ")
+        json.dump(gallery_obj["scenes"], fp, ensure_ascii=False)
+        fp.write(";\n")
+
+    # (8) 轻量向后兼容的 story_data.js（仅保留元信息，不再写入 10MB 台词）
+    main_len = len(story_obj["main"])
+    story_meta = {
+        "title": "魔女的夜宴",
+        "routeClearKeys": {
+            "nene": "nene",
+            "nene_restart": "nene_restart",
+            "meguru": "meguru",
+            "tsumugi": "tsumugi",
+            "touko": "touko",
+            "wakana": "wakana"
+        },
+        "branchRules": [
+            {"scenario": "main", "line": max(0, main_len - 1), "condition": {"flag": "nen", "value": 1}, "targetScenario": "nene"},
+            {"scenario": "main", "line": max(0, main_len - 1), "condition": {"flag": "meg", "value": 1}, "targetScenario": "meguru"},
+            {"scenario": "main", "line": max(0, main_len - 1), "condition": {"flag": "tsu", "value": 1}, "targetScenario": "tsumugi"},
+            {"scenario": "main", "line": max(0, main_len - 1), "condition": {"flag": "tou", "value": 1}, "targetScenario": "touko"},
+            {"scenario": "main", "line": max(0, main_len - 1), "condition": {"flag": "wak", "value": 1}, "targetScenario": "wakana"}
+        ],
+        "choices": story_obj.get("choices", [])
+    }
+    with open(os.path.join(DATA_DIR, "story_data.js"), "w", encoding="utf-8") as fp:
+        fp.write("// story_data.js —— 轻量级元信息与分支规则（各剧本已按需拆分独立模块）\n")
+        fp.write("export var STORY = ")
+        json.dump(story_meta, fp, ensure_ascii=False)
         fp.write(";\n")
 
     print("[+] Successfully transcoded all scenarios:")
     print(f"    - Main lines: {len(story_obj['main'])}")
     for rk in route_keys:
         print(f"    - Route '{rk}': {len(story_obj['routes'][rk])} lines")
-    for ak in ["nene", "meguru", "touko"]:
+    for ak in ["nene", "meguru", "tsumugi", "touko", "wakana"]:
         print(f"    - After '{ak}': {len(story_obj['after'][ak])} lines")
     print(f"    - Choices: {len(story_obj['choices'])}")
     print(f"    - Flowchart nodes: {len(flowchart_nodes)}")

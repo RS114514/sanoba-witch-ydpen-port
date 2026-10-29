@@ -1,6 +1,6 @@
 // pages/title/title.js —— 主菜单与鉴赏/日后谈入口
-import { S, getGal, log } from '../../common.js';
-import { readAllSaves, readSettings, writeSettings } from '../../storage.js';
+import { S, getGal, log, formatChapter } from '../../common.js';
+import { readAllSaves, readSettings, writeSettings, clearAllData } from '../../storage.js';
 import { STORY } from '../../data/story_data.js';
 import { bgmPath, bgUrl, isBlackBg, titleBgUrl } from '../../media.js';
 
@@ -8,10 +8,16 @@ function titleBgmName() {
   return (STORY.meta && STORY.meta.titleBgm) || '';
 }
 
-// 标题页读档/新游戏的安全场景解析：仅允许 main 与 after_* 剧本
+// 标题页读档/新游戏的安全场景解析：支持 main、角色线、二周目重启线与 after_* 剧本
 function safeScenario(value) {
-  if (typeof value === 'string' && (value === 'main' || /^after_[A-Za-z0-9_]+$/.test(value))) {
-    return value;
+  if (typeof value === 'string') {
+    if (value === 'main' || /^after_[A-Za-z0-9_]+$/.test(value)) {
+      return value;
+    }
+    var validRoutes = ['nene', 'nene_restart', 'meguru', 'tsumugi', 'touko', 'wakana'];
+    if (validRoutes.indexOf(value) >= 0) {
+      return value;
+    }
   }
   return 'main';
 }
@@ -33,6 +39,9 @@ export var titleMethods = {
   initTitle: function () {
     this.titleModalType = '';
     var settings = readSettings() || {};
+    var cleared = settings.clearedRoutes || [];
+    this.hasNeneCleared = cleared.indexOf('nene') >= 0;
+    this.hasNeneRestartCleared = cleared.indexOf('nene_restart') >= 0;
     this.bgmOn = settings.bgmEnabled !== false;
     this.bgmVolume = typeof settings.bgmVolume === 'number' ? settings.bgmVolume : 0.8;
     if (this.bgmVolume < 0) this.bgmVolume = 0;
@@ -51,17 +60,31 @@ export var titleMethods = {
   },
   startNewGame: function () {
     log('start new game');
-    // 新游戏必须显式回到 main 剧本，清除日后谈等残留场景状态
-    this.currentScenario = 'main';
-    this.currentLine = 0;
+    if (this.hasNeneCleared) {
+      // 宁宁线已通关，弹出周目选择弹层
+      this.titleModalType = 'restart_choice';
+      return;
+    }
+    this.executeStartGame('main', 0);
+  },
+  executeStartGame: function (scenario, line) {
+    this.titleModalType = '';
+    var targetScenario = scenario || 'main';
+    var targetLine = typeof line === 'number' ? line : 0;
+    this.currentScenario = targetScenario;
+    this.currentLine = targetLine;
     this.choiceSelections = {};
     this.choiceFlags = {};
     this.activeChoice = null;
     this.choiceNotice = '';
     this.view = 'game';
     if (typeof this.initGame === 'function') {
-      this.initGame('main', 0);
+      this.initGame(targetScenario, targetLine);
     }
+  },
+  startNeneRestart: function () {
+    log('start nene restart true route');
+    this.executeStartGame('nene_restart', 0);
   },
   continueGame: function () {
     log('continue game');
@@ -104,7 +127,7 @@ export var titleMethods = {
       this.titleConfirmModal = {
         slotNum: slotNum,
         title: '读取进度确认',
-        subtitle: '载入目标：' + codeStr + '（' + (data.time || '——') + ' · ' + (data.chapter || '1-1') + '）',
+        subtitle: '载入目标：' + codeStr + '（' + (data.time || '——') + ' · ' + formatChapter(data.chapter) + '）',
         message: '是否确定载入该槽位的物语推进记录？',
         warn: '※ 提示：载入将直接跳转至目标物语进度，未保存进度将丢失'
       };
@@ -120,6 +143,26 @@ export var titleMethods = {
       self._confirmExecuting = false;
       self.loadSlotFromTitle(slotNum);
     }, 60);
+  },
+  promptClearAllData: function () {
+    this.titleConfirmModal = {
+      isClearData: true,
+      title: '清除全部数据',
+      subtitle: 'CLEAR ALL DATA',
+      message: '确定要清除所有存档与游玩数据吗？\n所有存档、历史回顾与已解锁内容将被全部删除！',
+      warn: '注意：此操作不可撤销，请谨慎操作'
+    };
+  },
+  confirmClearAllData: function () {
+    clearAllData('sanoba_witch');
+    this.titleConfirmModal = null;
+    this.titleSaves = {};
+    this.choiceSelections = {};
+    this.choiceFlags = {};
+    this.currentLine = 0;
+    this.currentScenario = 'main';
+    this.initTitle();
+    this.closeTitleModal();
   },
   cancelTitleConfirm: function () {
     this.titleConfirmModal = null;
@@ -262,15 +305,25 @@ export var titleMethods = {
 
 export function renderTitle(vm, h) {
   // 左列 4 个核心游玩按钮
+  var startButton = vm.hasNeneCleared
+    ? h('div', {
+        staticStyle: S('title-menu-btn title-btn-restart'),
+        on: { click: function () { log('click restart new game'); vm.startNewGame(); } }
+      }, [
+        h('text', { staticStyle: S('title-btn-label title-btn-label-gold') }, '重启/新篇'),
+        h('text', { staticStyle: S('title-btn-sub-gold') }, 'RESTART')
+      ])
+    : h('div', {
+        staticStyle: S('title-menu-btn title-btn-primary'),
+        on: { click: function () { log('click new game'); vm.startNewGame(); } }
+      }, [
+        h('text', { staticStyle: S('title-btn-label') }, '新游戏'),
+        h('text', { staticStyle: S('title-btn-sub-highlight') }, 'START')
+      ]);
+
   var col1Buttons = [
-    // (1) 新游戏
-    h('div', {
-      staticStyle: S('title-menu-btn title-btn-primary'),
-      on: { click: function () { log('click new game'); vm.startNewGame(); } }
-    }, [
-      h('text', { staticStyle: S('title-btn-label') }, '新游戏'),
-      h('text', { staticStyle: S('title-btn-sub-highlight') }, 'START')
-    ]),
+    // (1) 新游戏 / 重启二周目
+    startButton,
     // (2) 继续游戏
     h('div', {
       staticStyle: S('title-menu-btn'),
@@ -384,6 +437,50 @@ export function renderTitle(vm, h) {
                     h('text', { staticStyle: S('title-system-volume-text') }, '＋')
                   ])
                 ])
+              ]),
+              h('div', { staticStyle: S('title-system-row') }, [
+                h('text', { staticStyle: S('title-system-label') }, '游玩数据'),
+                h('div', {
+                  staticStyle: S('title-system-btn title-system-clear-btn'),
+                  on: { click: function () { vm.promptClearAllData(); } }
+                }, [
+                  h('text', { staticStyle: S('title-system-btn-text') }, '清除所有数据')
+                ])
+              ])
+            ]),
+            h('div', { staticStyle: S('title-system-footer') }, [
+              h('div', {
+                staticStyle: S('title-system-btn title-system-close'),
+                on: { click: function () { vm.closeTitleModal(); } }
+              }, [
+                h('text', { staticStyle: S('title-system-btn-text') }, '返回标题')
+              ])
+            ])
+          ])
+        ])
+      );
+    } else if (vm.titleModalType === 'restart_choice') {
+      children.push(
+        h('div', { staticStyle: S('title-system-mask') }, [
+          h('div', { staticStyle: S('title-restart-box') }, [
+            h('div', { staticStyle: S('title-system-header') }, [
+              h('text', { staticStyle: S('title-system-title') }, '❖ 物语轮回与时空重启 ❖'),
+              h('text', { staticStyle: S('title-restart-notice') }, '检测到绫地宁宁通常结局记忆，可开启二周目逆转回溯')
+            ]),
+            h('div', { staticStyle: S('title-restart-options') }, [
+              h('div', {
+                staticStyle: S('title-restart-btn-primary'),
+                on: { click: function () { vm.startNeneRestart(); } }
+              }, [
+                h('text', { staticStyle: S('title-restart-btn-title') }, '▶ 开启二周目重启（宁宁视角回溯）'),
+                h('text', { staticStyle: S('title-restart-btn-sub') }, 'RESTART TRUE ROUTE')
+              ]),
+              h('div', {
+                staticStyle: S('title-restart-btn-normal'),
+                on: { click: function () { vm.executeStartGame('main', 0); } }
+              }, [
+                h('text', { staticStyle: S('title-restart-btn-title') }, '▷ 重新游玩共通序章'),
+                h('text', { staticStyle: S('title-restart-btn-sub') }, 'COMMON NEW GAME')
               ])
             ]),
             h('div', { staticStyle: S('title-system-footer') }, [
@@ -436,8 +533,8 @@ export function renderTitle(vm, h) {
       var selItem = tSaves['slot' + selSlot];
       var selBg = selItem && !isBlackBg(selItem.bg) ? bgUrl(selItem.bg) : '';
       var selDate = selItem && selItem.time ? selItem.time : '——';
-      var selChapter = selItem && selItem.chapter ? selItem.chapter : '——';
-      var selComment = selItem ? (selItem.speaker ? '【' + selItem.speaker + '】' : '') + selItem.text : 'NO DATA';
+      var selChapter = formatChapter(selItem && selItem.chapter);
+      var selComment = selItem ? (selItem.speaker ? '【' + selItem.speaker + '】' : '') + (selItem.text || '') : 'NO DATA';
 
       // 右侧 6 个槽位卡片
       var slotCards = [];
@@ -448,7 +545,7 @@ export function renderTitle(vm, h) {
           var codeStr = 's000' + (page + 1) + '-' + (slotNum < 10 ? '0' + slotNum : '' + slotNum);
           var timeStr = it && it.time ? it.time : '';
           var bgPath = it && !isBlackBg(it.bg) ? bgUrl(it.bg) : '';
-          var descStr = it ? (it.speaker ? '【' + it.speaker + '】' : '') + it.text : 'NO DATA';
+          var descStr = it ? (it.speaker ? '【' + it.speaker + '】' : '') + (it.text || '') : 'NO DATA';
           var isCurrentSelected = selSlot === slotNum;
           var cardClass = 'saveload-slot-card';
           if (isCurrentSelected) cardClass += ' saveload-slot-card-active';
@@ -549,17 +646,9 @@ export function renderTitle(vm, h) {
             h('div', { staticStyle: S('saveload-right-grid') }, slotCards)
           ]),
 
-          // 3. 底部状态与操作条
+          // 3. 底部状态栏（轻触有数据的槽位弹出载入确认）
           h('div', { staticStyle: S('saveload-bottom-bar') }, [
-            h('text', { staticStyle: S('saveload-bottom-tip') }, '载入界面。轻触有数据的槽位弹出载入确认。'),
-            h('div', { staticStyle: S('saveload-bottom-actions') }, [
-              h('div', {
-                staticStyle: S('saveload-bottom-btn'),
-                on: { click: function () { vm.closeTitleModal(); } }
-              }, [
-                h('text', { staticStyle: S('saveload-bottom-btn-text') }, '返回标题')
-              ])
-            ])
+            h('text', { staticStyle: S('saveload-bottom-tip') }, '✦ 载入物语进度：轻触有存档记录的槽位卡片载入游戏 ✦')
           ])
         ])
       );
@@ -584,7 +673,20 @@ export function renderTitle(vm, h) {
             vm.titleConfirmModal.warn ? h('text', { staticStyle: S('confirm-sub-warn') }, vm.titleConfirmModal.warn) : null
           ]),
           // 底部双按钮操作区
-          h('div', { staticStyle: S('confirm-actions') }, [
+          h('div', { staticStyle: S('confirm-actions') }, vm.titleConfirmModal.isClearData ? [
+            h('div', {
+              staticStyle: S('confirm-btn confirm-btn-ok confirm-btn-danger'),
+              on: { click: function () { vm.confirmClearAllData(); } }
+            }, [
+              h('text', { staticStyle: S('confirm-btn-ok-text') }, '确定清除')
+            ]),
+            h('div', {
+              staticStyle: S('confirm-btn confirm-btn-cancel'),
+              on: { click: function () { vm.cancelTitleConfirm(); } }
+            }, [
+              h('text', { staticStyle: S('confirm-btn-cancel-text') }, '取消')
+            ])
+          ] : [
             h('div', {
               staticStyle: S('confirm-btn confirm-btn-ok'),
               on: { click: function () { vm.confirmExecuteTitleLoad(); } }

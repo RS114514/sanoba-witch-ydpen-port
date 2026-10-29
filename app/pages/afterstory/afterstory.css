@@ -1,11 +1,12 @@
-/* app/pages/afterstory/afterstory.css —— 后日谈卡片与语音入口 */
+/* 五卡并排：800x220；宽高按包含边框的最坏情况留足空间。 */
 .as-root {
   position: absolute;
   top: 0;
   left: 0;
   width: 800px;
   height: 220px;
-  background-color: #0c0d14;
+  display: flex;
+  background-color: #120914;
   overflow: hidden;
 }
 
@@ -15,27 +16,30 @@
   left: 0;
   width: 800px;
   height: 220px;
-  opacity: 0.5;
+  opacity: 0.35;
 }
 
-/* 背景压暗层：保留绘马背景清晰度，同时让上方标题与按钮保持可读 */
 .as-bg-shade {
   position: absolute;
   top: 0;
   left: 0;
   width: 800px;
   height: 220px;
-  background-color: rgba(12, 13, 20, 0.3);
+  display: flex;
+  background-color: rgba(18, 9, 20, 0.4);
 }
 
 .as-header {
   position: absolute;
   top: 0;
   left: 0;
-  width: 800px;
-  height: 28px;
-  background-color: rgba(15, 23, 42, 0.92);
-  border-bottom: 1px solid rgba(244, 114, 182, 0.4);
+  width: 772px;
+  height: 30px;
+  background-color: #210d1f;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: #7d3257;
+  display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
@@ -44,45 +48,64 @@
 }
 
 .as-title-box {
+  width: 620px;
+  height: 28px;
+  display: flex;
   flex-direction: row;
   align-items: center;
 }
 
 .as-title-text {
-  color: #f472b6;
-  font-size: 13px;
+  color: #fad7a9;
+  font-size: 14px;
   font-weight: bold;
+  line-height: 22px;
 }
 
 .as-subtitle {
-  color: #94a3b8;
-  font-size: 10px;
-  margin-left: 10px;
+  color: #d9c2d0;
+  font-size: 11px;
+  line-height: 20px;
+  margin-left: 12px;
 }
 
 .as-btn-back {
-  background-color: rgba(185, 28, 28, 0.9);
-  border: 1px solid rgba(252, 165, 165, 0.6);
+  width: 80px;
+  height: 24px;
+  background-color: #7d1c31;
+  border-top-width: 1px;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+  border-top-style: solid;
+  border-right-style: solid;
+  border-bottom-style: solid;
+  border-left-style: solid;
+  border-top-color: #e5b982;
+  border-right-color: #e5b982;
+  border-bottom-color: #e5b982;
+  border-left-color: #e5b982;
   border-radius: 3px;
-  padding-left: 10px;
-  padding-right: 10px;
-  height: 20px;
+  display: flex;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
 }
 
 .as-btn-back-text {
   color: #ffffff;
-  font-size: 10px;
+  font-size: 12px;
+  line-height: 18px;
   font-weight: bold;
 }
 
 .as-viewport {
   position: absolute;
-  top: 28px;
-  left: 0;
-  width: 800px;
-  height: 192px;
+  top: 32px;
+  left: 9px;
+  width: 782px;
+  height: 188px;
+  display: flex;
   overflow: hidden;
 }
 
@@ -90,133 +113,234 @@
   position: absolute;
   top: 0;
   left: 0;
-  height: 192px;
+  height: 188px;
+  display: flex;
   flex-direction: row;
   align-items: center;
-  padding-left: 12px;
-  padding-right: 12px;
+  justify-content: space-between;
 }
 
-/* 卡片 180x180：顶部 180x101 绘马图（16:9）+ 底部 79 信息区 */
+/* 148x176 + 两侧边框至多 150x178；内层尺寸也兼容 border-box。 */
 .as-card {
-  width: 180px;
-  height: 180px;
-  background-color: rgba(15, 23, 42, 0.97);
-  border: 1px solid rgba(244, 114, 182, 0.55);
-  border-radius: 6px;
-  overflow: hidden;
-  margin-right: 12px;
   position: relative;
+  width: 148px;
+  height: 176px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  background-color: #1e0d1d;
+  border-top-width: 1px;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+  border-top-style: solid;
+  border-right-style: solid;
+  border-bottom-style: solid;
+  border-left-style: solid;
+  border-top-color: #6b3554;
+  border-right-color: #6b3554;
+  border-bottom-color: #6b3554;
+  border-left-color: #6b3554;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.as-card-unlocked {
+  border-top-color: #e5b982;
+  border-right-color: #e5b982;
+  border-bottom-color: #e5b982;
+  border-left-color: #e5b982;
 }
 
 .as-card-active {
-  border: 1px solid #f472b6;
-  background-color: rgba(30, 41, 59, 0.98);
+  background-color: #38152c;
 }
 
 .as-card-cover {
   position: absolute;
   top: 0;
   left: 0;
-  width: 180px;
-  height: 101px;
+  width: 146px;
+  height: 82px;
+  display: flex;
   overflow: hidden;
-  background-color: #111827;
+  background-color: #140813;
 }
 
-/* 绘马原图为 1440x810，按 16:9 显示，不缩放变形也不加暗 */
 .as-card-cover-img {
   position: absolute;
   top: 0;
   left: 0;
-  width: 180px;
-  height: 101px;
+  width: 146px;
+  height: 82px;
   opacity: 1;
 }
 
-.as-card-chapter-badge {
+.as-card-cover-locked {
+  opacity: 0.45;
+}
+
+.as-card-status-badge {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  height: 15px;
-  padding-left: 5px;
-  padding-right: 5px;
-  background-color: rgba(12, 13, 20, 0.72);
-  border: 1px solid rgba(253, 224, 71, 0.55);
+  top: 4px;
+  left: 4px;
+  width: 48px;
+  height: 18px;
+  background-color: rgba(18, 9, 20, 0.85);
   border-radius: 3px;
+  display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
 }
 
-.as-card-chapter {
-  color: #fde047;
-  font-size: 8px;
+.as-card-status {
+  color: #fad7a9;
+  font-size: 11px;
+  line-height: 16px;
   font-weight: bold;
 }
 
-/* 图片区下方约 79 高的信息区，文字不再压住绘马 */
+.as-card-lock {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 146px;
+  height: 82px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(18, 9, 20, 0.6);
+}
+
+.as-card-lock-title {
+  width: 134px;
+  height: 22px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: bold;
+  line-height: 22px;
+  text-align: center;
+}
+
+.as-card-lock-hint {
+  width: 134px;
+  height: 18px;
+  color: #eedcc9;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+
 .as-card-info {
   position: absolute;
-  top: 101px;
+  top: 82px;
   left: 0;
-  width: 180px;
-  height: 79px;
-  background-color: rgba(15, 23, 42, 0.97);
+  width: 146px;
+  height: 92px;
+  display: flex;
   flex-direction: column;
-  justify-content: space-between;
 }
 
 .as-card-name {
-  color: #ffffff;
-  font-size: 14px;
+  width: 134px;
+  height: 20px;
+  color: #fad7a9;
+  font-size: 13px;
+  line-height: 20px;
   font-weight: bold;
-  margin-left: 8px;
-  margin-right: 8px;
+  margin-top: 4px;
+  margin-left: 6px;
+  margin-right: 6px;
 }
 
 .as-card-stats {
-  color: #e2e8f0;
-  font-size: 9px;
-  line-height: 12px;
-  margin-left: 8px;
-  margin-right: 8px;
+  width: 134px;
+  height: 14px;
+  color: #eedcc9;
+  font-size: 10px;
+  line-height: 14px;
+  margin-left: 6px;
+  margin-right: 6px;
 }
 
 .as-card-bottom-actions {
+  position: absolute;
+  top: 50px;
+  left: 6px;
+  width: 134px;
+  height: 32px;
+  display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  margin-left: 8px;
-  margin-right: 8px;
 }
 
 .as-btn-voice {
-  width: 56px;
-  height: 28px;
-  background-color: rgba(244, 114, 182, 0.9);
+  width: 44px;
+  height: 30px;
+  background-color: #5c182d;
+  border-top-width: 1px;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+  border-top-style: solid;
+  border-right-style: solid;
+  border-bottom-style: solid;
+  border-left-style: solid;
+  border-top-color: #ba5462;
+  border-right-color: #ba5462;
+  border-bottom-color: #ba5462;
+  border-left-color: #ba5462;
   border-radius: 3px;
+  display: flex;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
 }
 
 .as-btn-voice-text {
   color: #ffffff;
-  font-size: 10px;
+  font-size: 12px;
+  line-height: 18px;
   font-weight: bold;
 }
 
 .as-btn-play {
-  width: 100px;
-  height: 28px;
-  background-color: rgba(16, 185, 129, 0.9);
+  width: 82px;
+  height: 30px;
+  background-color: #7d1c31;
+  border-top-width: 1px;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+  border-top-style: solid;
+  border-right-style: solid;
+  border-bottom-style: solid;
+  border-left-style: solid;
+  border-top-color: #e5b982;
+  border-right-color: #e5b982;
+  border-bottom-color: #e5b982;
+  border-left-color: #e5b982;
   border-radius: 3px;
+  display: flex;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
 }
 
+.as-btn-play-locked {
+  background-color: #453b46;
+  border-top-color: #786d79;
+  border-right-color: #786d79;
+  border-bottom-color: #786d79;
+  border-left-color: #786d79;
+}
+
 .as-btn-play-text {
   color: #ffffff;
-  font-size: 10px;
+  font-size: 12px;
+  line-height: 18px;
   font-weight: bold;
 }

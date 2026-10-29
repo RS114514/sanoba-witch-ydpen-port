@@ -1,4 +1,4 @@
-// app.js —— 应用入口
+// app.js —— 《魔女的夜宴》应用入口
 import PageIndex from './index.js';
 import PageShell from './shell.js';
 import Component from './Component.js';
@@ -6,14 +6,8 @@ import { BasePage } from './BasePage.js';
 
 function __loadModuleDefault(m) { return (m && typeof m === 'object' && m.default !== undefined) ? m.default : m; }
 globalThis.__loadModuleDefault = __loadModuleDefault;
-function vlog(m) { try { console.warn('[gal] App: ' + m); } catch (e) {} }
-var __pages = {
-  title: Component,
-  game: Component,
-  gallery: Component,
-  flowchart: Component,
-  afterstory: Component
-};
+function vlog(m) { try { console.warn('[sanoba] App: ' + m); } catch (e) {} }
+var __pages = { title: Component, game: Component, gallery: Component };
 class App extends $falcon.App {
   constructor() { super(); vlog('ctor'); }
   onLaunch(o) {
@@ -27,14 +21,8 @@ class App extends $falcon.App {
   onDestroy() { super.onDestroy(); vlog('onDestroy'); }
 }
 App.meta = {
-  name: 'RibbonEngine', version: '1.0.0', isSingleJsBundle: false,
-  pages: {
-    title: 'pages/title/title.vue',
-    game: 'pages/game/game.vue',
-    gallery: 'pages/gallery/gallery.vue',
-    flowchart: 'pages/flowchart/flowchart.vue',
-    afterstory: 'pages/afterstory/afterstory.vue'
-  },
+  name: '魔女的夜宴', version: '1.0.0', isSingleJsBundle: false,
+  pages: { title: 'pages/title/title.vue', game: 'pages/game/game.vue', gallery: 'pages/gallery/gallery.vue' },
   options: { style: { lessPaths: ['styles'] } },
 };
 $falcon.__pages = __pages;

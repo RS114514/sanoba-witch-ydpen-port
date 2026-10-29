@@ -16,7 +16,9 @@ import {
   writeSettings,
   pushBacklog,
   getBacklog,
-  clearBacklog
+  clearBacklog,
+  clearAllData,
+  resolveSlotThumbnail
 } from './storage.js';
 
 export {
@@ -34,7 +36,9 @@ export {
   writeSettings,
   pushBacklog,
   getBacklog,
-  clearBacklog
+  clearBacklog,
+  clearAllData,
+  resolveSlotThumbnail
 };
 
 // 章节名由数据行提供；缺失时返回可读占位，不再猜测游戏章节区间。
@@ -43,6 +47,11 @@ export function getChapterByLine(line) {
     return line.trim();
   }
   return '--';
+}
+
+export function formatChapter(value) {
+  var text = String(value || '').replace(/^chapter[\s\u3000]*/i, '').replace(/\s+/g, ' ').trim();
+  return text || '--';
 }
 
 export function S(name, extra) {

@@ -60,6 +60,48 @@
 
 ---
 
+## 推荐素材获取与本地编译
+
+本项目为纯净代码工程，不分发任何受版权保护的原始商业素材。运行需要从游戏正版安装包或官方 XP3 封包中解包提取资源并转码。
+
+- **推荐素材 XP3 封包下载**：
+  - 封包下载链接：[https://pan.touchgal.net/s/9nqSb](https://pan.touchgal.net/s/9nqSb)
+  - 下载后将包含 `data.xp3`、`bgm.xp3`、`voice.xp3` 等封包放置于 `data_src/` 目录下。
+
+### 自动化资产流水线构建步骤
+
+```bash
+# 1. 解包官方 XP3 封包
+python3 tools/unpack_xp3.py --input data_src/ --output extracted_raw/
+
+# 2. 转换剧本、背景、差分立绘与音频
+python3 tools/convert_scenario.py
+python3 tools/convert_all_bgs.py
+python3 tools/composite_all_fgs.py
+python3 tools/convert_all_cgs.py
+python3 tools/convert_all_sds.py
+python3 tools/sync_all_audio.py
+
+# 3. 运行资产审计对账，确保资源无缺失
+python3 tools/audit_assets.py
+
+# 4. 推送转换后的媒体素材至词典笔外部存储（需设备已连接 ADB）
+adb push /Volumes/500GB/gal_data/sanoba_witch/ /userdisk/gal_data/sanoba_witch/
+```
+
+### 软件编译打包与部署
+
+```bash
+# 1. 运行本地自动化测试与 CSS 静态尺寸约束检查
+python3 build.py --check
+node --experimental-vm-modules --test tools/test_*.mjs
+
+# 2. 编译字节码并安装至词典笔
+python3 build.py --serial 9DA2200007506350 --install
+```
+
+---
+
 ## 目录结构说明
 
 ```text

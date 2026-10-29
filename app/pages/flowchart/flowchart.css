@@ -1,4 +1,4 @@
-/* 800×220：顶部标题、章节进度、局部 DAG、操作栏与六路线栏 */
+/* pages/flowchart/flowchart.css —— 《魔女的夜宴》800x220 流程图拓扑与路线流转 */
 .fc-root {
   position: absolute;
   top: 0;
@@ -6,294 +6,421 @@
   width: 800px;
   height: 220px;
   overflow: hidden;
-  background-color: #11131a;
+  background-color: #120914;
 }
+
 .fc-bg-img {
   position: absolute;
   top: 0;
   left: 0;
   width: 800px;
   height: 220px;
-  opacity: 0.12;
+  opacity: 0.16;
 }
+
+/* 顶部 Header（800x28）：标题、当前路线章节进度、返回标题按钮 */
 .fc-header {
   position: absolute;
   top: 0;
   left: 0;
   width: 800px;
   height: 28px;
+  display: flex;
   flex-direction: row;
   align-items: center;
-  background-color: #291c25;
-  border-bottom: 1px solid #a98162;
+  justify-content: space-between;
+  background-color: #210d1f;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: #7d3257;
+  overflow: hidden;
 }
+
 .fc-title {
-  width: 112px;
-  margin-left: 12px;
-  color: #ffe3bd;
-  font-size: 14px;
+  position: absolute;
+  left: 12px;
+  top: 6px;
+  width: 120px;
+  color: #fad7a9;
+  font-size: 13px;
   font-weight: bold;
 }
+
 .fc-header-chapter {
-  width: 576px;
+  position: absolute;
+  left: 142px;
+  top: 7px;
+  width: 554px;
+  height: 16px;
+  overflow: hidden;
   color: #ffffff;
-  font-size: 12px;
+  font-size: 11px;
   text-align: center;
 }
+
 .fc-back {
+  position: absolute;
+  left: 712px;
+  top: 3px;
   width: 76px;
-  height: 24px;
+  height: 22px;
+  display: flex;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
-  background-color: #9d3945;
-  border: 1px solid #f1a6a6;
+  background-color: #7d1c31;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #e5b982;
   border-radius: 3px;
 }
+
 .fc-back-text {
   color: #ffffff;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: bold;
 }
+
+/* 章节横向指示条（宽 688px x 高 30px） */
 .fc-progress-viewport {
   position: absolute;
   top: 28px;
   left: 0;
   width: 688px;
-  height: 32px;
+  height: 30px;
   overflow: hidden;
-  background-color: #191a22;
-  border-bottom: 1px solid #48444c;
+  background-color: #190a18;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: #4a2139;
 }
+
 .fc-progress-canvas {
   position: absolute;
   top: 0;
-  height: 32px;
+  left: 0;
+  width: 688px;
+  height: 30px;
+  overflow: hidden;
 }
+
 .fc-progress {
   position: absolute;
   top: 3px;
   width: 56px;
-  height: 26px;
+  height: 24px;
+  display: flex;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
-  background-color: #34313a;
-  border: 1px solid #716873;
+  background-color: #2d1326;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #6e3558;
   border-radius: 3px;
 }
+
 .fc-progress-active {
-  background-color: #a24d54;
-  border-color: #ffd0b1;
+  background-color: #8c1e33;
+  border-color: #e5b982;
 }
+
 .fc-progress-text {
+  width: 52px;
+  height: 20px;
+  overflow: hidden;
+  text-align: center;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 9px;
   font-weight: bold;
 }
+
+/* 中间主视口 DAG 拓扑区域（宽 688px x 高 152px） */
 .fc-viewport {
   position: absolute;
-  top: 60px;
+  top: 32px;
   left: 0;
   width: 688px;
-  height: 128px;
+  height: 152px;
   overflow: hidden;
-  background-color: rgba(17, 19, 26, 0.94);
+  background-color: rgba(18, 9, 20, 0.95);
 }
+
 .fc-canvas {
-  position: absolute;
-}
-.fc-edge {
   position: absolute;
   top: 0;
   left: 0;
-  width: 1px;
-  height: 1px;
+  width: 688px;
+  height: 152px;
+  overflow: hidden;
 }
+
 .fc-edge-h {
   position: absolute;
   height: 1px;
-  background-color: #d5a08d;
+  background-color: #ba8d5d;
 }
+
 .fc-edge-v {
   position: absolute;
   width: 1px;
-  background-color: #d5a08d;
+  background-color: #ba8d5d;
 }
+
 .fc-arrow {
   position: absolute;
-  width: 8px;
+  width: 10px;
   height: 14px;
-  color: #ffd2ad;
-  font-size: 15px;
+  color: #e5b982;
+  font-size: 14px;
   font-weight: bold;
 }
+
 .fc-edge-label {
   position: absolute;
-  width: 112px;
-  height: 13px;
-  color: #ffd58a;
-  font-size: 10px;
-  background-color: #29232a;
+  width: 48px;
+  height: 12px;
+  color: #ffd700;
+  font-size: 9px;
+  background-color: #2a1123;
+  border-radius: 2px;
 }
+
+/* 节点卡片样式（宽 152px x 高 40px） */
 .fc-node {
   position: absolute;
-  width: 148px;
-  height: 48px;
-  padding: 4px;
-  background-color: #f4eee7;
-  border: 2px solid #8f6863;
+  width: 152px;
+  height: 40px;
+  overflow: hidden;
+  padding-top: 3px;
+  padding-right: 4px;
+  padding-bottom: 3px;
+  padding-left: 4px;
+  background-color: #241122;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #6b3554;
   border-radius: 4px;
-}
-.fc-node-select {
-  background-color: #fff1cc;
-  border-color: #d58c37;
-}
-.fc-node-branch,
-.fc-node-warp {
-  background-color: #e8e0ed;
-  border-color: #9673a4;
-}
-.fc-node-chapter {
-  background-color: #ead7d8;
-  border-color: #b45460;
-}
-.fc-node-selected {
-  border-color: #ffdc7c;
-  background-color: #fff7db;
-}
-.fc-node-top {
-  height: 14px;
-  flex-direction: row;
+  display: flex;
+  flex-direction: column;
   justify-content: space-between;
 }
+
+.fc-node-select {
+  background-color: #381525;
+  border-color: #d4a366;
+}
+
+.fc-node-branch,
+.fc-node-warp {
+  background-color: #2e122b;
+  border-color: #9c4b7b;
+}
+
+.fc-node-chapter {
+  background-color: #421424;
+  border-color: #ba5462;
+}
+
+.fc-node-bridge {
+  border-color: #79a7bd;
+  background-color: #182936;
+}
+
+.fc-node-selected {
+  border-color: #ffd700;
+  background-color: #4c1833;
+}
+
+.fc-node-top {
+  height: 12px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .fc-node-type {
-  color: #8d3542;
-  font-size: 10px;
+  color: #fad7a9;
+  font-size: 9px;
   font-weight: bold;
 }
+
 .fc-node-line {
-  color: #5a4545;
-  font-size: 10px;
+  color: #bfa1b3;
+  font-size: 9px;
 }
+
 .fc-node-title {
-  width: 138px;
-  height: 24px;
-  color: #241c20;
-  font-size: 11px;
+  width: 142px;
+  height: 21px;
+  color: #ffffff;
+  font-size: 10px;
+  line-height: 11px;
   font-weight: bold;
+  overflow: hidden;
 }
+
+/* 底部操作工具栏（高 32px） */
 .fc-toolbar {
   position: absolute;
   top: 188px;
   left: 0;
   width: 688px;
   height: 32px;
+  display: flex;
   flex-direction: row;
   align-items: center;
-  background-color: #27232b;
-  border-top: 1px solid #6b5a60;
+  background-color: #1a0b18;
+  border-top-width: 1px;
+  border-top-style: solid;
+  border-top-color: #562744;
+  padding-left: 6px;
+  padding-right: 6px;
 }
+
 .fc-chapter-button {
-  width: 62px;
-  height: 26px;
-  margin-left: 5px;
+  width: 58px;
+  height: 24px;
+  display: flex;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
-  background-color: #67505a;
-  border: 1px solid #b8989d;
+  background-color: #481a2c;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #8c425c;
   border-radius: 3px;
+  margin-right: 4px;
 }
+
 .fc-chapter-button-text {
-  color: #ffffff;
-  font-size: 11px;
+  color: #fff1df;
+  font-size: 10px;
   font-weight: bold;
 }
+
 .fc-notice {
-  width: 294px;
-  height: 26px;
+  width: 438px;
+  height: 24px;
+  line-height: 24px;
+  color: #eedcc9;
+  font-size: 10px;
   margin-left: 6px;
-  color: #f4dfc6;
+  margin-right: 6px;
+}
+
+.fc-pan-button {
+  width: 26px;
+  height: 24px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  background-color: #3b172a;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #7b3756;
+  border-radius: 3px;
+  margin-left: 3px;
+}
+
+.fc-pan-button-text {
+  color: #ffd7a9;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.fc-reset {
+  width: 42px;
+  height: 24px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  background-color: #481a2c;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #8c425c;
+  border-radius: 3px;
+  margin-left: 4px;
+}
+
+.fc-reset-text {
+  color: #eedcc9;
   font-size: 10px;
 }
-.fc-pan-button {
-  width: 29px;
-  height: 26px;
-  margin-left: 3px;
-  justify-content: center;
-  align-items: center;
-  background-color: #3f4854;
-  border: 1px solid #94a4b8;
-  border-radius: 3px;
-}
-.fc-pan-button-text {
-  color: #ffffff;
-  font-size: 15px;
-  font-weight: bold;
-}
-.fc-reset {
-  width: 45px;
-  height: 26px;
-  margin-left: 4px;
-  justify-content: center;
-  align-items: center;
-  background-color: #67505a;
-  border: 1px solid #b8989d;
-  border-radius: 3px;
-}
-.fc-reset-text {
-  color: #ffffff;
-  font-size: 11px;
-}
+
+/* 右侧路线切换边栏（宽 104px x 高 192px） */
 .fc-sidebar {
   position: absolute;
   top: 28px;
-  left: 696px;
-  width: 104px;
+  left: 688px;
+  width: 112px;
   height: 192px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  background-color: #211b23;
-  border-left: 1px solid #7f6268;
+  justify-content: space-between;
+  background-color: #170916;
+  border-left-width: 1px;
+  border-left-style: solid;
+  border-left-color: #562744;
+  padding-top: 2px;
+  padding-bottom: 4px;
 }
+
 .fc-route-list {
   width: 104px;
-  height: 150px;
+  height: 148px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
 }
+
 .fc-route {
-  width: 96px;
-  height: 23px;
-  margin-top: 2px;
+  width: 100px;
+  height: 19px;
+  display: flex;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
-  background-color: #42363f;
-  border: 1px solid #7d6b75;
+  background-color: #2d1326;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #612d4d;
   border-radius: 3px;
 }
+
 .fc-route-active {
-  background-color: #b24e59;
-  border-color: #ffd0b1;
+  background-color: #8c1e33;
+  border-color: #e5b982;
 }
+
 .fc-route-text {
   color: #ffffff;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: bold;
 }
+
 .fc-route-art {
   width: 104px;
-  height: 34px;
+  height: 32px;
+  display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
+  background-color: #241122;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #562744;
+  border-radius: 3px;
 }
-.fc-route-ema {
-  width: 42px;
-  height: 32px;
-  border: 1px solid #d1a88e;
-  border-radius: 2px;
-}
+
 .fc-route-caption {
-  width: 52px;
-  height: 34px;
-  color: #ffe3bd;
-  font-size: 11px;
+  color: #fad7a9;
+  font-size: 10px;
+  font-weight: bold;
   text-align: center;
 }

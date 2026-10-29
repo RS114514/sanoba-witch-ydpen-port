@@ -18,8 +18,7 @@ build/
 dist/
 *.amr
 *.js.bin
-tools/FreeMote/
-tools/tlg2bmp
+test_results/
 
 # User-provided game data and assets (must never be committed)
 data_src/
@@ -27,7 +26,6 @@ assets_src/
 assets/
 build_assets/
 scenario_json/
-app/data/*.js
 app/data/.data_manifest.json
 
 # Any media / font / archive that could contain game resources
@@ -59,3 +57,7 @@ app/data/.data_manifest.json
 # Keep the original app icon and the prebuilt engine plugin
 !app/app_icon.png
 !native/prebuilt/libjsapi_gal.so
+
+# Internal prompt working notes
+*以下是为另一位_AI_Agent_*
+

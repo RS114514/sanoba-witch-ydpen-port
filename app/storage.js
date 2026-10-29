@@ -42,6 +42,28 @@ export function getNowDateStr() {
          (h < 10 ? '0' + h : '' + h) + ':' + (min < 10 ? '0' + min : '' + min);
 }
 
+// 旧版本存档字段兼容：读取时补齐 canonical 字段，不改写设备文件和槽位键。
+export function normalizeSaves(parsed) {
+  var saves = parsed || {};
+  for (var key in saves) {
+    if (!/^slot\d+$/.test(key) || !saves[key] || typeof saves[key] !== 'object') continue;
+    var item = saves[key];
+    var extra = item.extra || {};
+    item.time = item.time || item.date || '';
+    item.chapter = item.chapter || '--';
+    item.speaker = item.speaker || '';
+    item.text = item.text || extra.text || '';
+    item.bg = item.bg || '';
+    item.cg = item.cg || '';
+    item.sd = item.sd || '';
+    item.extra = {
+      choices: extra.choices || item.choiceSelections || {},
+      flags: extra.flags || item.choiceFlags || {}
+    };
+  }
+  return saves;
+}
+
 // 读取全部存档
 export function readAllSaves(gameId) {
   var gid = gameId || _activeGameId;
@@ -52,14 +74,14 @@ export function readAllSaves(gameId) {
       var newPath = getSaveFilePath(gid);
       var txt = G.readText(newPath);
       if (txt) {
-        var parsed = JSON.parse(txt);
+        var parsed = normalizeSaves(JSON.parse(txt));
         _savesCache[gid] = parsed;
         return parsed;
       }
       // 2. 尝试通用备用平铺路径
       var flatTxt = G.readText('/userdisk/gal_data/' + gid + '_saves.json');
       if (flatTxt) {
-        var flatParsed = JSON.parse(flatTxt);
+        var flatParsed = normalizeSaves(JSON.parse(flatTxt));
         _savesCache[gid] = flatParsed;
         return flatParsed;
       }
@@ -106,6 +128,8 @@ export function saveSlotRecord(slotNum, state, gameId) {
     speaker: state.speaker || '',
     text: (state.text || '').substring(0, 48),
     bg: state.bg || '',
+    cg: state.cg || '',
+    sd: state.sd || '',
     bgm: state.bgm || '',
     character: state.character || null,
     playTimeMs: Number(state.playTimeMs || 0),
@@ -197,6 +221,8 @@ export function pushBacklog(entry) {
   if (!entry) return;
   _backlogQueue.push({
     id: entry.id || Date.now(),
+    scenario: entry.scenario || 'main',
+    line: typeof entry.line === 'number' ? entry.line : 0,
     chapter: entry.chapter || '--',
     speaker: entry.speaker || '',
     text: entry.text || '',
@@ -217,4 +243,63 @@ export function getBacklog() {
 // 清空历史履历
 export function clearBacklog() {
   _backlogQueue = [];
+}
+
+// 检查路线是否通关（例如 nene 一周目、nene_restart 二周目）
+export function isRouteCleared(routeKey, gameId) {
+  var gid = gameId || _activeGameId;
+  var settings = readSettings(gid) || {};
+  var cleared = settings.clearedRoutes || [];
+  return cleared.indexOf(routeKey) >= 0;
+}
+
+// 记录通关路线
+export function markRouteClearedInStorage(routeKey, gameId) {
+  if (!routeKey) return false;
+  var gid = gameId || _activeGameId;
+  var settings = readSettings(gid) || {};
+  var cleared = settings.clearedRoutes || [];
+  if (cleared.indexOf(routeKey) < 0) {
+    cleared.push(routeKey);
+    return writeSettings({ clearedRoutes: cleared }, gid);
+  }
+  return true;
+}
+
+// 清除所有游玩数据（重置所有存档槽、清空系统设置与已解锁记录、清空履历）
+export function clearAllData(gameId) {
+  var gid = gameId || _activeGameId;
+  _savesCache[gid] = {};
+  _settingsCache[gid] = Object.assign({}, DEFAULT_SETTINGS, { gameId: gid });
+  _backlogQueue = [];
+  var G = getGal();
+  if (G && typeof G.writeText === 'function') {
+    try {
+      G.writeText(getSaveFilePath(gid), '{}');
+      G.writeText('/userdisk/gal_data/' + gid + '_saves.json', '{}');
+      G.writeText('/userdisk/gal_data/' + gid + '/saves.json', '{}');
+      var defaultSettingsStr = JSON.stringify(_settingsCache[gid]);
+      G.writeText(getSettingsFilePath(gid), defaultSettingsStr);
+      G.writeText('/userdisk/gal_data/' + gid + '_settings.json', defaultSettingsStr);
+      G.writeText('/userdisk/gal_data/' + gid + '/settings.json', defaultSettingsStr);
+    } catch (e) {
+      log('clearAllData write error: ' + e);
+    }
+  }
+  return true;
+}
+
+// 解析存档卡片缩略图（优先级：明确thumb > 事件CG > SD特殊演出 > 场景原画背景 > 默认壁纸）
+export function resolveSlotThumbnail(it, gameId) {
+  if (!it) return '';
+  var gid = gameId || _activeGameId;
+  var baseDir = '/userdisk/gal_data/' + gid + '/';
+  if (it.thumb) {
+    if (it.thumb.indexOf('file://') === 0 || it.thumb.indexOf('/') === 0) return it.thumb;
+    return 'file://' + baseDir + it.thumb;
+  }
+  if (it.cg) return 'file://' + baseDir + 'cg/' + it.cg + '.png';
+  if (it.sd) return 'file://' + baseDir + 'sd/' + it.sd + '.png';
+  if (it.bg && it.bg !== '画面_黒') return 'file://' + baseDir + 'bg/' + it.bg + '.png';
+  return 'file://' + baseDir + 'bg/title_bg_v3.png';
 }

@@ -1,30 +1,85 @@
-// pages/afterstory/afterstory.js —— 后日谈卡片与物语入口（数据驱动）
+// pages/afterstory/afterstory.js —— 5位女主专属后日谈物语与系统播报语音
 import { S, log, getGal } from '../../common.js';
-import { STORY } from '../../data/story_data.js';
-import { coverUrl, titleBgUrl, voicePath } from '../../media.js';
+import { readSettings } from '../../storage.js';
+import { titleBgUrl, cgUrl, voicePath } from '../../media.js';
+import { after_nene } from '../../data/after_nene.js';
+import { after_meguru } from '../../data/after_meguru.js';
+import { after_tsumugi } from '../../data/after_tsumugi.js';
+import { after_touko } from '../../data/after_touko.js';
+import { after_wakana } from '../../data/after_wakana.js';
 
-var HEROINES = (STORY.afterMeta || []).map(function (meta) {
-  var lines = (STORY.after && STORY.after[meta.key]) || [];
-  return {
-    key: meta.key,
-    chapter: meta.chapter || '',
-    title: meta.title || meta.name || meta.key,
-    name: meta.name || meta.key,
-    voice: meta.voice || '',
-    bg: meta.cover ? coverUrl(meta.cover) : '',
-    lines: lines,
-    lineCount: lines.length,
-    voiceCount: lines.filter(function (line) { return !!line[3]; }).length
-  };
-});
+var HEROINES = [
+  {
+    key: 'nene',
+    // flowchart_data: nene 通常结局接 nene_restart 真结局；转码规则中 117 日后谈在 110~116 重启篇之后。
+    clearRoute: 'nene_restart',
+    unlockHint: '通关宁宁重启线解锁',
+    name: '绫地 宁宁',
+    lines: after_nene,
+    voice: 'nen001_027_ref.opus',
+    bg: cgUrl('ev102a')
+  },
+  {
+    key: 'meguru',
+    clearRoute: 'meguru',
+    unlockHint: '通关巡线后解锁',
+    name: '因幡 巡',
+    lines: after_meguru,
+    voice: 'meg006_022.opus',
+    bg: cgUrl('ev201a')
+  },
+  {
+    key: 'tsumugi',
+    clearRoute: 'tsumugi',
+    unlockHint: '通关紬线后解锁',
+    name: '椎名 紬',
+    lines: after_tsumugi,
+    voice: 'tsu011_002.opus',
+    bg: cgUrl('ev301a')
+  },
+  {
+    key: 'touko',
+    clearRoute: 'touko',
+    unlockHint: '通关憧子线后解锁',
+    name: '户隐 憧子',
+    lines: after_touko,
+    voice: 'tou006_017.opus',
+    bg: cgUrl('ev401a')
+  },
+  {
+    key: 'wakana',
+    clearRoute: 'wakana',
+    unlockHint: '通关和奏线后解锁',
+    name: '假屋 和奏',
+    lines: after_wakana,
+    voice: 'wak001_033.opus',
+    bg: cgUrl('ev501a')
+  }
+];
 
-var AS_VIEWPORT_WIDTH = 800;
-var AS_VIEWPORT_HEIGHT = 192;
-var AS_CARD_WIDTH = 180;
-var AS_CARD_GAP = 12;
-var AS_LIST_PADDING = 12;
-var AS_CONTENT_WIDTH = HEROINES.length * (AS_CARD_WIDTH + AS_CARD_GAP) + AS_LIST_PADDING * 2;
+for (var i = 0; i < HEROINES.length; i++) {
+  HEROINES[i].lineCount = HEROINES[i].lines.length;
+  HEROINES[i].voiceCount = HEROINES[i].lines.filter(function (line) {
+    return !!line[3];
+  }).length;
+}
+
+// 两侧各留 9px；五张卡片连同双侧 1px 边框与四处间距共 782px。
+var AS_VIEWPORT_WIDTH = 782;
+var AS_VIEWPORT_HEIGHT = 188;
+var AS_CARD_WIDTH = 148;
+var AS_CARD_GAP = 8;
+var AS_CONTENT_WIDTH = HEROINES.length * (AS_CARD_WIDTH + 2) + (HEROINES.length - 1) * AS_CARD_GAP;
 var AS_MIN_PAN = Math.min(0, AS_VIEWPORT_WIDTH - AS_CONTENT_WIDTH);
+
+function readClearedAfterRoutes() {
+  var settings = readSettings() || {};
+  return Array.isArray(settings.clearedRoutes) ? settings.clearedRoutes : [];
+}
+
+function isAfterUnlocked(heroine, cleared) {
+  return !!heroine && cleared.indexOf(heroine.clearRoute) >= 0;
+}
 
 function findHeroine(key) {
   for (var i = 0; i < HEROINES.length; i++) {
@@ -39,8 +94,15 @@ export var afterstoryMethods = {
     this._asStartX = 0;
     this._asStartPanX = 0;
     this._asMoved = false;
-    if (!findHeroine(this.selectedAfterHeroine)) {
-      this.selectedAfterHeroine = HEROINES.length ? HEROINES[0].key : '';
+    var cleared = readClearedAfterRoutes();
+    if (!isAfterUnlocked(findHeroine(this.selectedAfterHeroine), cleared)) {
+      this.selectedAfterHeroine = '';
+      for (var i = 0; i < HEROINES.length; i++) {
+        if (isAfterUnlocked(HEROINES[i], cleared)) {
+          this.selectedAfterHeroine = HEROINES[i].key;
+          break;
+        }
+      }
     }
     // 词典笔没有 ALSA dmix：先释放标题 BGM 独占的声卡，播报语音才能打开设备。
     var G = getGal();
@@ -96,6 +158,9 @@ export var afterstoryMethods = {
   },
   startHeroineStory: function (heroine) {
     if (this._asMoved || !heroine) return;
+    // 入口重新读取持久化进度；不信任旧卡片状态或调用者传入的解锁字段。
+    heroine = findHeroine(heroine.key);
+    if (!isAfterUnlocked(heroine, readClearedAfterRoutes())) return;
     log('start heroine story: after_' + heroine.key);
     var G = getGal();
     if (G) {
@@ -127,36 +192,30 @@ export function renderAfterstory(vm, h) {
     h('text', { staticStyle: S('as-btn-back-text') }, '返回标题')
   ]);
 
-  if (!HEROINES.length) {
-    return h('div', { staticStyle: S('as-root') }, [
-      h('image', { staticStyle: S('as-bg-img'), attrs: { src: titleBgUrl() } }),
-      h('div', { staticStyle: S('as-bg-shade') }),
-      h('div', { staticStyle: S('as-header') }, [
-        h('div', { staticStyle: S('as-title-box') }, [
-          h('text', { staticStyle: S('as-title-text') }, '◆ 日后谈 AFTER STORY ◆'),
-          h('text', { staticStyle: S('as-subtitle') }, '未找到后日谈数据，请先按 app/data/README.md 生成 story_data.js')
-        ]),
-        backButton
-      ])
-    ]);
-  }
-
+  // 渲染和入口使用同一解锁规则，不新增根组件未声明的响应式状态。
+  var cleared = readClearedAfterRoutes();
   var cards = [];
   for (var i = 0; i < HEROINES.length; i++) {
     (function (heroine) {
+      var unlocked = isAfterUnlocked(heroine, cleared);
+      var cardStyle = unlocked ? 'as-card as-card-unlocked' : 'as-card';
+      if (unlocked && vm.selectedAfterHeroine === heroine.key) cardStyle += ' as-card-active';
       cards.push(
         h('div', {
           key: heroine.key,
-          staticStyle: S(vm.selectedAfterHeroine === heroine.key ? 'as-card as-card-active' : 'as-card'),
+          staticStyle: S(cardStyle),
           on: { click: function () { vm.selectAfterHeroine(heroine); } }
         }, [
           h('div', { staticStyle: S('as-card-cover') }, [
             heroine.bg ? h('image', {
-              staticStyle: S('as-card-cover-img'),
-              attrs: { src: heroine.bg }
+              staticStyle: S(unlocked ? 'as-card-cover-img' : 'as-card-cover-img as-card-cover-locked'),
+              attrs: { src: heroine.bg, resize: 'contain' }
             }) : null,
-            h('div', { staticStyle: S('as-card-chapter-badge') }, [
-              h('text', { staticStyle: S('as-card-chapter') }, heroine.chapter || heroine.title)
+            unlocked ? h('div', { staticStyle: S('as-card-status-badge') }, [
+              h('text', { staticStyle: S('as-card-status') }, '已通关')
+            ]) : h('div', { staticStyle: S('as-card-lock') }, [
+              h('text', { staticStyle: S('as-card-lock-title') }, '未解锁'),
+              h('text', { staticStyle: S('as-card-lock-hint') }, heroine.unlockHint)
             ])
           ]),
 
@@ -164,7 +223,7 @@ export function renderAfterstory(vm, h) {
             h('text', { staticStyle: S('as-card-name') }, heroine.name),
             h('text', {
               staticStyle: S('as-card-stats')
-            }, heroine.lineCount + ' 句台词 · ' + heroine.voiceCount + ' 条语音'),
+            }, heroine.lineCount + ' 句台词 / ' + heroine.voiceCount + ' 条语音'),
 
             h('div', { staticStyle: S('as-card-bottom-actions') }, [
               heroine.voice ? h('div', {
@@ -174,16 +233,16 @@ export function renderAfterstory(vm, h) {
                   vm.selectAfterHeroine(heroine);
                 } }
               }, [
-                h('text', { staticStyle: S('as-btn-voice-text') }, '♪ 播报')
+                h('text', { staticStyle: S('as-btn-voice-text') }, '播报')
               ]) : null,
               h('div', {
-                staticStyle: S('as-btn-play'),
+                staticStyle: S(unlocked ? 'as-btn-play' : 'as-btn-play as-btn-play-locked'),
                 on: { click: function (e) {
                   if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
                   vm.startHeroineStory(heroine);
                 } }
               }, [
-                h('text', { staticStyle: S('as-btn-play-text') }, '▶ 进入后日谈物语')
+                h('text', { staticStyle: S('as-btn-play-text') }, unlocked ? '进入后日谈' : '未解锁')
               ])
             ])
           ])
@@ -195,13 +254,13 @@ export function renderAfterstory(vm, h) {
   return h('div', { staticStyle: S('as-root') }, [
     h('image', {
       staticStyle: S('as-bg-img'),
-      attrs: { src: titleBgUrl() }
+      attrs: { src: titleBgUrl(), resize: 'contain' }
     }),
     h('div', { staticStyle: S('as-bg-shade') }),
     h('div', { staticStyle: S('as-header') }, [
       h('div', { staticStyle: S('as-title-box') }, [
-        h('text', { staticStyle: S('as-title-text') }, '◆ 日后谈 AFTER STORY ◆'),
-        h('text', { staticStyle: S('as-subtitle') }, HEROINES.length + ' 个追加物语 · 轻触按键播放播报语音')
+        h('text', { staticStyle: S('as-title-text') }, '日后谈 AFTER STORY'),
+        h('text', { staticStyle: S('as-subtitle') }, '通关对应路线后解锁，播报可随时试听')
       ]),
       backButton
     ]),
