@@ -1187,7 +1187,7 @@ export function renderGame(vm, h) {
       ])
     ]),
 
-    // 3. 右侧大尺寸触控快捷栏（88px x 220px，6 个核心触控按键）
+    // 3. 右侧大尺寸触控快捷栏（88px x 220px，4 个核心触控按键）
     h('div', { staticStyle: S('game-ctrl-pane') }, [
       // (1) 语音
       h('div', {
@@ -1216,25 +1216,7 @@ export function renderGame(vm, h) {
         h('text', { staticStyle: S(vm.skipMode ? 'game-ctrl-btn-sub-active' : 'game-ctrl-btn-sub') }, 'SKIP')
       ]),
 
-      // (4) 保存
-      h('div', {
-        staticStyle: S('game-ctrl-btn'),
-        on: { click: function () { vm.openGameModal('save'); } }
-      }, [
-        h('text', { staticStyle: S('game-ctrl-btn-title') }, '💾 保存'),
-        h('text', { staticStyle: S('game-ctrl-btn-sub') }, 'SAVE')
-      ]),
-
-      // (5) 读取
-      h('div', {
-        staticStyle: S('game-ctrl-btn'),
-        on: { click: function () { vm.openGameModal('load'); } }
-      }, [
-        h('text', { staticStyle: S('game-ctrl-btn-title') }, '📂 读取'),
-        h('text', { staticStyle: S('game-ctrl-btn-sub') }, 'LOAD')
-      ]),
-
-      // (6) 菜单
+      // (4) 菜单
       h('div', {
         staticStyle: S('game-ctrl-btn'),
         on: { click: function () { vm.openGameModal('menu'); } }

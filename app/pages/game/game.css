@@ -17,12 +17,12 @@
 .game-sub-zoom-text { font-size: 10px; color: #ecd6e3; }
 .game-voice-playing-hint { font-size: 9px; color: #90dab5; }
 .game-dialog-tap-hint { font-size: 9px; color: #e0bca9; }
-.game-ctrl-pane { width: 88px; height: 220px; position: absolute; left: 712px; top: 0; background-color: #170d18; display: flex; flex-direction: column; align-items: center; justify-content: space-around; padding-top: 2px; padding-bottom: 2px; }
-.game-ctrl-btn { width: 74px; height: 31px; background-color: #3a1e35; border-width: 1px; border-style: solid; border-color: #ad789c; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.game-ctrl-pane { width: 88px; height: 220px; position: absolute; left: 712px; top: 0; background-color: #170d18; display: flex; flex-direction: column; align-items: center; justify-content: space-around; padding-top: 4px; padding-bottom: 4px; }
+.game-ctrl-btn { width: 76px; height: 46px; background-color: #3a1e35; border-width: 1px; border-style: solid; border-color: #ad789c; border-radius: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .game-ctrl-btn-active { background-color: #7b3157; border-color: #f0c0d8; }
-.game-ctrl-btn-title { font-size: 11px; font-weight: bold; color: #fff4e5; line-height: 13px; }
-.game-ctrl-btn-sub { font-size: 7px; color: #cc9fbd; line-height: 9px; }
-.game-ctrl-btn-sub-active { font-size: 7px; color: #ffe0b9; line-height: 9px; }
+.game-ctrl-btn-title { font-size: 13px; font-weight: bold; color: #fff4e5; line-height: 16px; }
+.game-ctrl-btn-sub { font-size: 8px; color: #cc9fbd; line-height: 10px; }
+.game-ctrl-btn-sub-active { font-size: 8px; color: #ffe0b9; line-height: 10px; }
 .game-zoom-overlay { position: absolute; left: 0; top: 0; width: 800px; height: 220px; background-color: #000000; overflow: hidden; z-index: 100; }
 .game-zoom-viewport { position: absolute; left: 68px; top: 0; width: 664px; height: 220px; overflow: hidden; }
 .game-zoom-img, .game-zoom-char, .game-zoom-sd { position: absolute; }
