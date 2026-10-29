@@ -207,6 +207,25 @@ export function titleBgUrl() {
   return bgUrl('title_bg_v3');
 }
 
+export function sysPath(name) {
+  return assetPath('sys', name, '.png');
+}
+
+export function sysUrl(name) {
+  var path = sysPath(name);
+  return path ? fileUrl(path) : '';
+}
+
+export function sePath(name) {
+  var file = withExt(name, '.ogg', ['.ogg', '.opus', '.wav', '.mp3']);
+  return file ? ASSET_ROOT + '/se/' + file : '';
+}
+
+export function seUrl(name) {
+  var path = sePath(name);
+  return path ? fileUrl(path) : '';
+}
+
 // 空值或黑屏标记不渲染背景
 export function isBlackBg(name) {
   return !name || name === '__black__' || name === '画面_黒' || name === 'black';

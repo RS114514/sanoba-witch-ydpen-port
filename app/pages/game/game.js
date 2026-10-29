@@ -374,6 +374,10 @@ var ROUTE_CLEAR_KEYS = {
   wakana: 'wakana'
 };
 
+// 原版共通线分支锚点（由 scenario_json 018/019 与 chapterStart 对账得到）。
+var WAKANA_ROUTE_LINE = 8485;
+var MAIN_ROUTE_LINE = 9220;
+
 var GAME_ZOOM_LEVELS = [
   { scale: 1.0, w: 390, h: 220, label: '1.0x' },
   { scale: 1.5, w: 585, h: 330, label: '1.5x' },
@@ -454,6 +458,8 @@ export var gameMethods = {
     this.normalEnd = false;
     this.choiceSelections = this.choiceSelections || {};
     this.choiceFlags = this.choiceFlags || {};
+    this._choiceJustConfirmed = null;
+    this.selectedChoiceIndex = -1;
     this.rebuildChoiceSkips();
     this.applyCurrentLine(true);
   },
@@ -485,10 +491,24 @@ export var gameMethods = {
     var cg = row[8];
     var sd = row[9];
 
-    // 检查是否有未选选项
+    // 检查是否有选项：无论是否选过，进入选择支行均弹出选项弹层，允许玩家随时重选/更改
     var pendingChoice = findChoiceForLine(this.currentLine || 0, this.currentScenario);
-    if (pendingChoice && !this.isChoiceSelected(pendingChoice)) {
+    // 刚确认的选项如果目标行仍是本行，先显示该行台词，不能再次弹出同一选项。
+    if (pendingChoice && this._choiceJustConfirmed &&
+        this._choiceJustConfirmed.key === choiceKey(pendingChoice) &&
+        this._choiceJustConfirmed.line === this.currentLine) {
+      pendingChoice = null;
+      this._choiceJustConfirmed = null;
+    } else if (pendingChoice) {
+      this._choiceJustConfirmed = null;
+    }
+    if (pendingChoice) {
       this.activeChoice = pendingChoice;
+      var pKey = choiceKey(pendingChoice);
+      var savedIdx = (this.choiceSelections && this.choiceSelections[pKey] !== undefined)
+        ? this.choiceSelections[pKey]
+        : -1;
+      this.selectedChoiceIndex = savedIdx;
       this.autoPlay = false;
       this.skipMode = false;
       this.clearAutoTimer();
@@ -498,6 +518,7 @@ export var gameMethods = {
       return true;
     }
     this.activeChoice = null;
+    this.selectedChoiceIndex = -1;
     this.dialoguePage = 0;
 
     pushBacklog({
@@ -594,6 +615,26 @@ export var gameMethods = {
     return !!this.choiceSelections[key];
   },
 
+  highlightChoiceOption: function (option) {
+    if (!option) return;
+    this.selectedChoiceIndex = option.index;
+  },
+
+  confirmChoiceOption: function () {
+    if (!this.activeChoice) return;
+    var choice = this.activeChoice;
+    var selectedIdx = this.selectedChoiceIndex;
+    var targetOpt = null;
+    for (var i = 0; i < choice.options.length; i++) {
+      if (choice.options[i].index === selectedIdx) {
+        targetOpt = choice.options[i];
+        break;
+      }
+    }
+    if (!targetOpt) return;
+    this.selectChoiceOption(targetOpt);
+  },
+
   selectChoiceOption: function (option) {
     if (!this.activeChoice || !option) return;
     var choice = this.activeChoice;
@@ -616,8 +657,10 @@ export var gameMethods = {
     }
 
     this.choiceSelections[key] = option.index;
+    this.selectedChoiceIndex = option.index;
     applyChoiceOperations(this.choiceFlags, choiceOperations(option.exp) || [], false, 1);
     this.rebuildChoiceSkips();
+    this._choiceJustConfirmed = { key: key, line: this.currentLine };
 
     this.activeChoice = null;
     var target = resolveChoiceOptionLine(option, choice);
@@ -655,31 +698,18 @@ export var gameMethods = {
   resolveRouteBranchAt: function (line) {
     if (this.currentScenario !== 'main') return null;
     var data = getActiveScenario(this);
-    if (line >= data.length - 1) {
-      var flags = this.choiceFlags || {};
-      var neneScore = flags.nen || 0;
-      var meguruScore = flags.meg || 0;
-      var tsumugiScore = flags.tsu || 0;
-      var toukoScore = flags.tou || 0;
-      var wakanaScore = flags.wak || 0;
+    var flags = this.choiceFlags || {};
 
-      var bestScore = -1;
-      var bestRoute = 'nene';
-      var pairs = [
-        ['nene', neneScore],
-        ['meguru', meguruScore],
-        ['tsumugi', tsumugiScore],
-        ['touko', toukoScore],
-        ['wakana', wakanaScore]
-      ];
-      for (var p = 0; p < pairs.length; p++) {
-        if (pairs[p][1] > bestScore) {
-          bestScore = pairs[p][1];
-          bestRoute = pairs[p][0];
-        }
-      }
-      return bestRoute;
+    // scenario_json/018 scene 2: f.wak_flag == 3 -> 和奏线
+    if (line >= WAKANA_ROUTE_LINE && flags.wak === 3) return 'wakana';
+    // scenario_json/019 scene 11: 原版四个精确阈值，顺序即原版 nexts 顺序
+    if (line >= MAIN_ROUTE_LINE) {
+      if (flags.nen === 4) return 'nene';
+      if (flags.meg === 4) return 'meguru';
+      if (flags.tsu === 2) return 'tsumugi';
+      if (flags.tou === 3) return 'touko';
     }
+    // 没有命中精确条件时不伪造默认女主路线；让共通线自然结束。
     return null;
   },
 
@@ -745,6 +775,8 @@ export var gameMethods = {
     this.skipMode = false;
     this.clearAutoTimer();
     this.activeChoice = null;
+    this._choiceJustConfirmed = null;
+    this.selectedChoiceIndex = -1;
     this.currentLine = previousChoicePosition(this, line);
     var backChoice = findChoiceForLine(this.currentLine, this.currentScenario);
     if (backChoice) {
@@ -1292,29 +1324,43 @@ export function renderGame(vm, h) {
     );
   }
 
-  // 选项弹层
+  // 选项弹层（两步防误触：先点选高亮，后点击右侧确定）
   if (vm.activeChoice && vm.activeChoice.options) {
     var opts = vm.activeChoice.options;
+    var selectedIdx = vm.selectedChoiceIndex;
     var optVnodes = [];
     for (var oi = 0; oi < opts.length; oi++) {
       (function (opt) {
+        var isSelected = selectedIdx === opt.index;
         optVnodes.push(h('div', {
-          staticStyle: S('game-choice-option'),
-          on: { click: function () { vm.selectChoiceOption(opt); } }
+          staticStyle: S(isSelected ? 'game-choice-option game-choice-option-selected' : 'game-choice-option'),
+          on: { click: function () { vm.highlightChoiceOption(opt); } }
         }, [
-          h('text', { staticStyle: S('game-choice-option-index') }, (oi + 1) + '.'),
-          h('text', { staticStyle: S('game-choice-option-text') }, opt.text)
+          h('text', { staticStyle: S(isSelected ? 'game-choice-option-index game-choice-option-index-selected' : 'game-choice-option-index') },
+            isSelected ? '▶' + (oi + 1) + '.' : (oi + 1) + '.'),
+          h('text', { staticStyle: S(isSelected ? 'game-choice-option-text game-choice-option-text-selected' : 'game-choice-option-text') }, opt.text)
         ]));
       })(opts[oi]);
     }
+
+    var confirmBtn = h('div', {
+      staticStyle: S(selectedIdx >= 0 ? 'game-choice-confirm-btn game-choice-confirm-btn-active' : 'game-choice-confirm-btn'),
+      on: { click: function () { vm.confirmChoiceOption(); } }
+    }, [
+      h('text', { staticStyle: S('game-choice-confirm-title') }, '确定选择'),
+      h('text', { staticStyle: S('game-choice-confirm-sub') }, 'CONFIRM')
+    ]);
+
     children.push(h('div', { staticStyle: S('game-choice-mask') }, [
       h('div', { staticStyle: S('game-choice-panel') }, [
         h('div', { staticStyle: S('game-choice-header') }, [
-          h('text', { staticStyle: S('game-choice-title') }, '请选择接下来的行动'),
-          h('text', { staticStyle: S('game-choice-notice') }, '轻触选项继续剧情')
+          h('text', { staticStyle: S('game-choice-title') }, '请选择行动（点选后点击右侧确定）'),
+          h('text', { staticStyle: S('game-choice-notice') }, vm.activeChoice.prompt || '面对此刻，你的心意是……')
         ]),
-        h('text', { staticStyle: S('game-choice-prompt') }, vm.activeChoice.prompt || '面对此刻，你的心意是……'),
-        h('div', { staticStyle: S('game-choice-options') }, optVnodes)
+        h('div', { staticStyle: S('game-choice-body') }, [
+          h('div', { staticStyle: S('game-choice-options') }, optVnodes),
+          h('div', { staticStyle: S('game-choice-side') }, [confirmBtn])
+        ])
       ])
     ]));
   }

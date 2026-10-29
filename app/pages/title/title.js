@@ -2,7 +2,7 @@
 import { S, getGal, log, formatChapter } from '../../common.js';
 import { readAllSaves, readSettings, writeSettings, clearAllData } from '../../storage.js';
 import { STORY } from '../../data/story_data.js';
-import { bgmPath, bgUrl, isBlackBg, titleBgUrl } from '../../media.js';
+import { bgmPath, bgUrl, isBlackBg, titleBgUrl, sysUrl, seUrl } from '../../media.js';
 
 function titleBgmName() {
   return (STORY.meta && STORY.meta.titleBgm) || '';
@@ -38,10 +38,22 @@ function applySavedChoiceState(vm, data) {
 export var titleMethods = {
   initTitle: function () {
     this.titleModalType = '';
+    this.stopRestartEffect();
     var settings = readSettings() || {};
     var cleared = settings.clearedRoutes || [];
     this.hasNeneCleared = cleared.indexOf('nene') >= 0;
     this.hasNeneRestartCleared = cleared.indexOf('nene_restart') >= 0;
+    this.restartFxRevealed = true;
+    this.restartFxHighlight = false;
+    // 原版 custom.ks *restart_open：宁宁一周目通关后，标题载入时播放星芒
+    // 登场演出，sf.title_restart 只在第一次出现，之后直接显示按钮。
+    var playRestartFx = this.view === 'title' &&
+      this.hasNeneCleared && !this.hasNeneRestartCleared && settings.titleRestartSeen !== true;
+    if (playRestartFx) {
+      this.restartFxRevealed = false;
+      writeSettings({ titleRestartSeen: true });
+      this.scheduleRestartEffect();
+    }
     this.bgmOn = settings.bgmEnabled !== false;
     this.bgmVolume = typeof settings.bgmVolume === 'number' ? settings.bgmVolume : 0.8;
     if (this.bgmVolume < 0) this.bgmVolume = 0;
@@ -58,17 +70,100 @@ export var titleMethods = {
     this.titleConfirmModal = null;
     this._confirmExecuting = false;
   },
-  startNewGame: function () {
-    log('start new game');
-    if (this.hasNeneCleared) {
-      // 宁宁线已通关，弹出周目选择弹层
-      this.titleModalType = 'restart_choice';
+  scheduleRestartEffect: function () {
+    var self = this;
+    this._restartFxTimers = this._restartFxTimers || [];
+    this._restartFxTimers.push(setTimeout(function () {
+      self.playRestartEffect();
+    }, 260));
+  },
+  stopRestartEffect: function () {
+    var timers = this._restartFxTimers || [];
+    for (var i = 0; i < timers.length; i++) clearTimeout(timers[i]);
+    this._restartFxTimers = [];
+    this.restartFxActive = false;
+    this.restartFxFlash = 0;
+    this.restartFxOpacity = 0;
+    this.restartFxHighlight = false;
+    this.restartFxRevealed = true;
+    this._restartFxSe2Played = false;
+  },
+  playRestartEffect: function () {
+    if (this.view !== 'title') {
+      this.stopRestartEffect();
       return;
     }
+    this.restartFxActive = true;
+    this.restartFxRevealed = false;
+    this._restartFxSe2Played = false;
+    var G = getGal();
+    if (G && typeof G.playVoice === 'function') {
+      var se1 = seUrl('restart_eff1');
+      if (se1) G.playVoice(se1, 0.55);
+    }
+    // Falcon 不支持 CSS transform/rotate，用盒模型尺寸、left/top 与透明度
+    // 复刻原版星芒“收缩 → 爆开”的观感；时间线取自 custom.ks 的 1000/500ms。
+    var frames = [
+      { at: 0, stage: 1, size: 920, cx: 300, cy: 110, opacity: 0 },
+      { at: 90, stage: 1, size: 880, cx: 300, cy: 110, opacity: 0.9 },
+      { at: 210, stage: 1, size: 760, cx: 320, cy: 110, opacity: 1 },
+      { at: 380, stage: 1, size: 560, cx: 300, cy: 110, opacity: 1 },
+      { at: 540, stage: 1, size: 400, cx: 220, cy: 110, opacity: 1 },
+      { at: 680, stage: 1, size: 260, cx: 120, cy: 110, opacity: 0.95 },
+      { at: 800, stage: 1, size: 150, cx: 20, cy: 110, opacity: 0.8 },
+      { at: 900, stage: 2, size: 100, cx: -50, cy: 110, opacity: 0.9, flash: 0.35 },
+      { at: 1010, stage: 2, size: 280, cx: 130, cy: 110, opacity: 0.75, flash: 0.6 },
+      { at: 1140, stage: 2, size: 480, cx: 300, cy: 110, opacity: 0.5, flash: 0.45 },
+      { at: 1280, stage: 2, size: 680, cx: 420, cy: 110, opacity: 0.28, flash: 0.25 },
+      { at: 1420, stage: 2, size: 860, cx: 500, cy: 110, opacity: 0.1, flash: 0.08 },
+      { at: 1560, done: true }
+    ];
+    var self = this;
+    this._restartFxTimers = this._restartFxTimers || [];
+    for (var i = 0; i < frames.length; i++) {
+      (function (frame) {
+        self._restartFxTimers.push(setTimeout(function () {
+          if (self.view !== 'title') {
+            self.stopRestartEffect();
+            return;
+          }
+          if (frame.done) {
+            self.restartFxActive = false;
+            self.restartFxFlash = 0;
+            self.restartFxOpacity = 0;
+            self.restartFxRevealed = true;
+            self.restartFxHighlight = true;
+            self._restartFxTimers.push(setTimeout(function () {
+              self.restartFxHighlight = false;
+            }, 900));
+            return;
+          }
+          if (frame.stage === 2 && !self._restartFxSe2Played) {
+            self._restartFxSe2Played = true;
+            var gal = getGal();
+            if (gal && typeof gal.playVoice === 'function') {
+              var se2 = seUrl('restart_eff2');
+              if (se2) gal.playVoice(se2, 0.5);
+            }
+          }
+          self.restartFxStage = frame.stage;
+          self.restartFxSize = frame.size;
+          self.restartFxX = Math.round(frame.cx - frame.size / 2);
+          self.restartFxY = Math.round(frame.cy - frame.size / 2);
+          self.restartFxOpacity = frame.opacity;
+          self.restartFxFlash = frame.flash || 0;
+        }, frame.at));
+      })(frames[i]);
+    }
+  },
+  startNewGame: function () {
+    log('start new game');
+    // 开始游戏始终从共通线重新开始；二周目是独立的「重新开始」入口。
     this.executeStartGame('main', 0);
   },
   executeStartGame: function (scenario, line) {
     this.titleModalType = '';
+    this.stopRestartEffect();
     var targetScenario = scenario || 'main';
     var targetLine = typeof line === 'number' ? line : 0;
     this.currentScenario = targetScenario;
@@ -171,6 +266,7 @@ export var titleMethods = {
   openFlowchartModal: function () {
     this.titleModalType = '';
     this.titleConfirmModal = null;
+    this.stopRestartEffect();
     this.view = 'flowchart';
     if (typeof this.initFlowchart === 'function') {
       this.initFlowchart();
@@ -180,6 +276,7 @@ export var titleMethods = {
     this.currentLine = line || 0;
     this.titleModalType = '';
     this.titleConfirmModal = null;
+    this.stopRestartEffect();
     this.view = 'game';
     if (typeof this.initGame === 'function') {
       this.initGame();
@@ -188,6 +285,7 @@ export var titleMethods = {
   openAfterModal: function () {
     this.titleModalType = '';
     this.titleConfirmModal = null;
+    this.stopRestartEffect();
     this.view = 'afterstory';
     if (typeof this.initAfterStory === 'function') {
       this.initAfterStory();
@@ -208,6 +306,7 @@ export var titleMethods = {
       applySavedChoiceState(this, data);
       this.titleModalType = '';
       this.titleConfirmModal = null;
+      this.stopRestartEffect();
       this.view = 'game';
       if (typeof this.initGame === 'function') {
         this.initGame(scenario, line);
@@ -218,6 +317,7 @@ export var titleMethods = {
     log('open gallery');
     this.titleModalType = '';
     this.titleConfirmModal = null;
+    this.stopRestartEffect();
     this.galleryCgFullscreen = false;
     this.view = 'gallery';
     if (typeof this.initGallery === 'function') {
@@ -304,25 +404,34 @@ export var titleMethods = {
 };
 
 export function renderTitle(vm, h) {
-  // 左列 4 个核心游玩按钮
-  var startButton = vm.hasNeneCleared
+  // 左列 4 个核心游玩按钮；二周目解锁后，把「重新开始」作为独立入口，
+  // 不替换「开始游戏」（原版 allbtns2 结构）。
+  var startButton = h('div', {
+    staticStyle: S('title-menu-btn title-btn-primary'),
+    on: { click: function () { log('click new game'); vm.startNewGame(); } }
+  }, [
+    h('text', { staticStyle: S('title-btn-label') }, '开始游戏'),
+    h('text', { staticStyle: S('title-btn-sub-highlight') }, 'START')
+  ]);
+  var restartButton = vm.hasNeneCleared && !vm.hasNeneRestartCleared && vm.restartFxRevealed !== false
     ? h('div', {
-        staticStyle: S('title-menu-btn title-btn-restart'),
-        on: { click: function () { log('click restart new game'); vm.startNewGame(); } }
+        staticStyle: S('title-menu-btn title-btn-restart' + (vm.restartFxHighlight ? ' title-btn-restart-revealed' : '')),
+        on: { click: function () { log('click restart'); vm.startNeneRestart(); } }
       }, [
-        h('text', { staticStyle: S('title-btn-label title-btn-label-gold') }, '重启/新篇'),
+        h('text', { staticStyle: S('title-btn-label title-btn-label-gold') }, '重新开始'),
         h('text', { staticStyle: S('title-btn-sub-gold') }, 'RESTART')
       ])
-    : h('div', {
-        staticStyle: S('title-menu-btn title-btn-primary'),
-        on: { click: function () { log('click new game'); vm.startNewGame(); } }
-      }, [
-        h('text', { staticStyle: S('title-btn-label') }, '新游戏'),
-        h('text', { staticStyle: S('title-btn-sub-highlight') }, 'START')
-      ]);
+    : null;
+  var flowButton = h('div', {
+    staticStyle: S('title-menu-btn'),
+    on: { click: function () { log('click flowchart'); vm.openFlowchartModal(); } }
+  }, [
+    h('text', { staticStyle: S('title-btn-label') }, '流程图'),
+    h('text', { staticStyle: S('title-btn-sub') }, 'CHART')
+  ]);
 
   var col1Buttons = [
-    // (1) 新游戏 / 重启二周目
+    // (1) 开始游戏（始终是共通线；二周目另开按钮）
     startButton,
     // (2) 继续游戏
     h('div', {
@@ -340,14 +449,8 @@ export function renderTitle(vm, h) {
       h('text', { staticStyle: S('title-btn-label') }, '读取存档'),
       h('text', { staticStyle: S('title-btn-sub') }, 'LOAD')
     ]),
-    // (4) 流程图
-    h('div', {
-      staticStyle: S('title-menu-btn'),
-      on: { click: function () { log('click flowchart'); vm.openFlowchartModal(); } }
-    }, [
-      h('text', { staticStyle: S('title-btn-label') }, '流程图'),
-      h('text', { staticStyle: S('title-btn-sub') }, 'CHART')
-    ])
+    // (4) 二周目「重新开始」优先；平时保留流程图入口
+    restartButton || flowButton
   ];
 
   // 右列 4 个鉴赏扩展按钮
@@ -393,12 +496,46 @@ export function renderTitle(vm, h) {
       attrs: { src: titleBgUrl() }
     }),
 
+    // 顶部小入口：二周目按钮出现时流程图仍可访问
+    h('div', { staticStyle: S('title-top-bar') }, [
+      h('div', {
+        staticStyle: S('title-bgm-pill'),
+        on: { click: function () { log('click top flowchart'); vm.openFlowchartModal(); } }
+      }, [
+        h('text', { staticStyle: S('title-bgm-pill-text') }, '流程图')
+      ])
+    ]),
+
     // 2. 双列 8 个主菜单按钮
     h('div', { staticStyle: S('title-menu-container') }, [
       h('div', { staticStyle: S('title-menu-col') }, col1Buttons),
       h('div', { staticStyle: S('title-menu-col') }, col2Buttons)
     ])
   ];
+
+  // 原版 *restart_open 星芒演出（图片 + 白闪，位于菜单之上、弹窗之下）
+  if (vm.restartFxActive) {
+    var fxSize = Number(vm.restartFxSize) || 0;
+    var fxOpacity = Number(vm.restartFxOpacity) || 0;
+    if (fxSize > 0 && fxOpacity > 0.005) {
+      children.push(h('image', {
+        staticStyle: S('title-restart-fx', {
+          left: (Number(vm.restartFxX) || 0) + 'px',
+          top: (Number(vm.restartFxY) || 0) + 'px',
+          width: fxSize + 'px',
+          height: fxSize + 'px',
+          opacity: fxOpacity
+        }),
+        attrs: { src: sysUrl(vm.restartFxStage === 2 ? 'title_restart_eff2' : 'title_restart_eff1') }
+      }));
+    }
+    var fxFlash = Number(vm.restartFxFlash) || 0;
+    if (fxFlash > 0.005) {
+      children.push(h('div', {
+        staticStyle: S('title-restart-flash', { opacity: fxFlash })
+      }));
+    }
+  }
 
   // 弹窗浮层
   if (vm.titleModalType) {
@@ -446,41 +583,6 @@ export function renderTitle(vm, h) {
                 }, [
                   h('text', { staticStyle: S('title-system-btn-text') }, '清除所有数据')
                 ])
-              ])
-            ]),
-            h('div', { staticStyle: S('title-system-footer') }, [
-              h('div', {
-                staticStyle: S('title-system-btn title-system-close'),
-                on: { click: function () { vm.closeTitleModal(); } }
-              }, [
-                h('text', { staticStyle: S('title-system-btn-text') }, '返回标题')
-              ])
-            ])
-          ])
-        ])
-      );
-    } else if (vm.titleModalType === 'restart_choice') {
-      children.push(
-        h('div', { staticStyle: S('title-system-mask') }, [
-          h('div', { staticStyle: S('title-restart-box') }, [
-            h('div', { staticStyle: S('title-system-header') }, [
-              h('text', { staticStyle: S('title-system-title') }, '❖ 物语轮回与时空重启 ❖'),
-              h('text', { staticStyle: S('title-restart-notice') }, '检测到绫地宁宁通常结局记忆，可开启二周目逆转回溯')
-            ]),
-            h('div', { staticStyle: S('title-restart-options') }, [
-              h('div', {
-                staticStyle: S('title-restart-btn-primary'),
-                on: { click: function () { vm.startNeneRestart(); } }
-              }, [
-                h('text', { staticStyle: S('title-restart-btn-title') }, '▶ 开启二周目重启（宁宁视角回溯）'),
-                h('text', { staticStyle: S('title-restart-btn-sub') }, 'RESTART TRUE ROUTE')
-              ]),
-              h('div', {
-                staticStyle: S('title-restart-btn-normal'),
-                on: { click: function () { vm.executeStartGame('main', 0); } }
-              }, [
-                h('text', { staticStyle: S('title-restart-btn-title') }, '▷ 重新游玩共通序章'),
-                h('text', { staticStyle: S('title-restart-btn-sub') }, 'COMMON NEW GAME')
               ])
             ]),
             h('div', { staticStyle: S('title-system-footer') }, [

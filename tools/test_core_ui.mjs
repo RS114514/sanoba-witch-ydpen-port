@@ -210,6 +210,8 @@ test('page resume preserves progress and hide cancels automatic advancement', as
   assert.equal(vm.skipMode, false);
   assert.equal(timers.size, 0);
   assert.ok(Object.hasOwn(api.Root.data(), 'saveNotice'));
+  assert.ok(Object.hasOwn(api.Root.data(), 'selectedChoiceIndex'));
+  assert.ok(Object.hasOwn(api.Root.data(), 'hasNeneCleared'));
 });
 
 test('load pagination exposes six slots on every page and wraps around', async () => {

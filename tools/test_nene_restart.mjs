@@ -68,7 +68,7 @@ test('Storage & SafeScenario: support nene and nene_restart persistence', async 
 });
 
 // 3. 验证 title.js 中的二周目重启交互与弹层
-test('Title UI: restart button and choice modal on Nene cleared', async () => {
+test('Title UI: restart is a separate entry from start game', async () => {
   const titlePath = new URL('../app/pages/title/title.js', import.meta.url);
   let titleCode = await readFile(titlePath, 'utf8');
   titleCode = titleCode
@@ -80,7 +80,7 @@ test('Title UI: restart button and choice modal on Nene cleared', async () => {
       const clearAllData = () => {};
     `)
     .replace("import { STORY } from '../../data/story_data.js';", "const STORY = { meta: { titleBgm: '' }, routes: { nene: [], nene_restart: [] } };")
-    .replace("import { bgmPath, bgUrl, isBlackBg, titleBgUrl } from '../../media.js';", "const bgmPath = () => ''; const bgUrl = () => ''; const isBlackBg = () => false; const titleBgUrl = () => '';");
+    .replace("import { bgmPath, bgUrl, isBlackBg, titleBgUrl, sysUrl, seUrl } from '../../media.js';", "const bgmPath = () => ''; const bgUrl = () => ''; const isBlackBg = () => false; const titleBgUrl = () => ''; const sysUrl = () => ''; const seUrl = () => '';");
 
   const titleMod = await import('data:text/javascript;base64,' + Buffer.from(titleCode).toString('base64'));
 
@@ -99,11 +99,19 @@ test('Title UI: restart button and choice modal on Nene cleared', async () => {
   vmCleared.initTitle();
   assert.equal(vmCleared.hasNeneCleared, true);
 
-  // 点击新游戏应弹出周目选择器
+  // 开始游戏仍是共通线；二周目是独立入口，不替换开始游戏
   vmCleared.startNewGame();
-  assert.equal(vmCleared.titleModalType, 'restart_choice');
+  assert.equal(vmCleared.currentScenario, 'main');
+  assert.equal(vmCleared.titleModalType, '');
 
-  // 选择重启二周目
+  const h = (tag, props, children) => ({ tag, props: props || {}, children: Array.isArray(children) ? children.flat() : (children ? [children] : []) });
+  const readText = node => node && typeof node === 'object' ? (node.children || []).map(readText).join('') : String(node || '');
+  const titleText = readText(titleMod.renderTitle(vmCleared, h));
+  assert.match(titleText, /开始游戏/);
+  assert.match(titleText, /重新开始/);
+  assert.match(titleText, /流程图/);
+
+  // 独立的重启入口进入二周目
   vmCleared.startNeneRestart();
   assert.equal(vmCleared.currentScenario, 'nene_restart');
   assert.equal(vmCleared.currentLine, 0);

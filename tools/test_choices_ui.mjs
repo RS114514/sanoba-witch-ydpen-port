@@ -71,14 +71,21 @@ test('route affinity grows once, survives revisits, and changes by replacement',
   assert.equal(vm.choiceFlags.nen || 0, 0); assert.equal(vm.choiceFlags.meg, 1);
   assert.equal(vm.choiceSelections['main:2864'], 2);
 });
-test('all five affinity flags feed the existing route resolver', async () => {
+test('all five affinity flags use the original precise route thresholds', async () => {
   const { vm } = await load();
-  for (const [line, option, flag, route] of [[2337, 1, 'wak', 'wakana'], [2864, 1, 'nen', 'nene'], [2864, 2, 'meg', 'meguru'], [7666, 1, 'tsu', 'tsumugi'], [7666, 2, 'tou', 'touko']]) {
-    vm.choiceFlags = {}; vm.choiceSelections = {};
-    vm.initGame('main', line); choose(vm, option);
-    assert.equal(vm.choiceFlags[flag], 1);
-    assert.equal(vm.resolveRouteBranchAt(vm.currentScenarioData.length - 1), route);
+  for (const [line, flags, route] of [
+    [8485, { wak: 3 }, 'wakana'],
+    [9220, { nen: 4 }, 'nene'],
+    [9220, { meg: 4 }, 'meguru'],
+    [9220, { tsu: 2 }, 'tsumugi'],
+    [9220, { tou: 3 }, 'touko']
+  ]) {
+    vm.choiceFlags = flags;
+    vm.currentScenario = 'main';
+    assert.equal(vm.resolveRouteBranchAt(line), route);
   }
+  vm.choiceFlags = { nen: 3 };
+  assert.equal(vm.resolveRouteBranchAt(9220), null);
 });
 test('canonical save/load and title continue restore selections, flags and exact pending skip', async () => {
   const { api, vm } = await load();
@@ -86,12 +93,17 @@ test('canonical save/load and title continue restore selections, flags and exact
   const saved = api.loadSlotRecord(4);
   assert.equal(saved.extra.choices['main:2864'], 1); assert.equal(saved.extra.flags.nen, 1);
   vm.choiceFlags = {}; vm.choiceSelections = {}; vm.executeLoad(4);
-  assert.equal(vm.currentLine, 2864); assert.equal(vm.activeChoice, null);
+  assert.equal(vm.currentLine, 2864);
+  assert.equal(vm.activeChoice?.targetLine, 2864);
+  assert.equal(vm.selectedChoiceIndex, 1);
+  choose(vm, 1);
+  assert.equal(vm.currentLine, 2864);
+  assert.equal(vm.activeChoice, null);
   assert.ok(vm.pendingSkipStack.some(s => s.skipAfterLine === 2990 && s.skipToLine === 3055));
   vm.currentLine = 2990; vm.applyCurrentLine(false); advance(vm); assert.equal(vm.currentLine, 3055);
   vm.choiceFlags = {}; vm.choiceSelections = {}; vm.continueGame();
   assert.equal(vm.choiceSelections['main:2864'], 1); assert.equal(vm.choiceFlags.nen, 1);
-  vm.initGame('main', 2864); assert.equal(vm.activeChoice, null);
+  vm.initGame('main', 2864); assert.equal(vm.activeChoice?.targetLine, 2864);
 });
 test('empty first branch targets keep the first dialogue and never invent +1', async () => {
   const { vm } = await load();
@@ -180,4 +192,54 @@ test('every real option target matches original scene labels or the explicit sha
     }
   }
   assert.equal(checked, 76);
+});
+
+
+test('choice can be reopened and changed after a first answer', async () => {
+  const { vm } = await load();
+  vm.initGame('main', 2864);
+  vm.highlightChoiceOption(vm.activeChoice.options.find(o => o.index === 1));
+  vm.confirmChoiceOption();
+  assert.equal(vm.choiceSelections['main:2864'], 1);
+  vm.initGame('main', 2864);
+  assert.equal(vm.activeChoice?.targetLine, 2864);
+  vm.highlightChoiceOption(vm.activeChoice.options.find(o => o.index === 2));
+  vm.confirmChoiceOption();
+  assert.equal(vm.choiceSelections['main:2864'], 2);
+});
+
+test('choice requires an explicit selected option before confirm', async () => {
+  const { vm } = await load();
+  vm.initGame('main', 2864);
+  assert.equal(vm.selectedChoiceIndex, -1);
+  vm.confirmChoiceOption();
+  assert.ok(vm.activeChoice);
+  vm.highlightChoiceOption(vm.activeChoice.options.find(o => o.index === 1));
+  vm.confirmChoiceOption();
+  assert.equal(vm.activeChoice, null);
+});
+
+test('flowchart re-entry clears the confirmed-choice guard and reopens the choice', async () => {
+  const { vm } = await load();
+  vm.initGame('main', 2337);
+  choose(vm, 1);
+  vm.initGame('main', 2337);
+  assert.equal(vm.currentLine, 2337);
+  assert.equal(vm.activeChoice?.targetLine, 2337);
+  assert.equal(vm.selectedChoiceIndex, 1);
+});
+
+test('original route entry lines switch to the chosen heroine route', async () => {
+  const { vm } = await load();
+  vm.initGame('main', 8484);
+  vm.choiceFlags = { wak: 3 };
+  vm.currentLine = 8485;
+  vm.nextLine();
+  assert.equal(vm.currentScenario, 'wakana');
+
+  vm.initGame('main', 9219);
+  vm.choiceFlags = { nen: 4 };
+  vm.currentLine = 9220;
+  vm.nextLine();
+  assert.equal(vm.currentScenario, 'nene');
 });

@@ -36,6 +36,8 @@ export function bgUrl(name) {
 }
 export function titleBgUrl() { return 'file:///userdisk/gal_data/bg/title_bg.png'; }
 export function isBlackBg(name) { return !name || name === '__black__' || name === '画面_黒'; }
+export function sysUrl(name) { return 'file:///userdisk/gal_data/sys/' + name + '.png'; }
+export function seUrl(name) { return 'file:///userdisk/gal_data/se/' + name + '.ogg'; }
 `;
 const source = await readFile(MODULE_URL, 'utf8');
 let instrumentedSource = source.replace(
@@ -52,7 +54,7 @@ instrumentedSource = instrumentedSource.replace(
 );
 instrumentedSource = instrumentedSource.replace(
   /import \{[^}]+\} from '\.\.\/\.\.\/media\.js';/,
-  `import { bgmPath, bgUrl, isBlackBg, titleBgUrl } from '${dataUrl(mediaStub)}';`
+  `import { bgmPath, bgUrl, isBlackBg, titleBgUrl, sysUrl, seUrl } from '${dataUrl(mediaStub)}';`
 );
 assert.notEqual(instrumentedSource, source, 'test must load title.js with native dependencies stubbed');
 const { titleMethods, renderTitle } = await import(dataUrl(instrumentedSource));

@@ -15,16 +15,20 @@
   background-color: #000000;
   z-index: 100;
 }
-.gallery-bg-img,
-.gallery-fs-bg {
+.gallery-bg-img {
   position: absolute;
   left: 0px;
   top: 0px;
   width: 800px;
   height: 220px;
-}
-.gallery-bg-img {
   opacity: 0.18;
+}
+.gallery-fs-bg {
+  position: absolute;
+  left: 204px;
+  top: 0px;
+  width: 391px;
+  height: 220px;
 }
 
 /* 38px 顶栏：标题、四 Tab、返回按钮互不占用对方的区域。 */
@@ -170,8 +174,9 @@
 }
 .g-group-card-bg,
 .g-stand-group-img {
-  width: 120px;
+  width: 156px;
   height: 88px;
+  margin-left: -18px;
   background-color: #120a16;
 }
 .g-group-info {
