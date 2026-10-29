@@ -105,6 +105,20 @@ function makeVm(settings = {}, withPage = true) {
   return { vm, nativeCalls, finishCalls, writes: globalThis.__titleTestWrites };
 }
 
+test('restart effect triggers once when Nene is cleared', () => {
+  const { vm, writes } = makeVm({ clearedRoutes: ['nene'] });
+  vm.view = 'title';
+  vm.initTitle();
+  assert.equal(vm.restartFxRevealed, false);
+  assert.ok(writes.some(w => w.titleRestartSeen === true));
+  vm.restartFxActive = true;
+  vm.restartFxPhase = 0;
+  assert.match(JSON.stringify(renderTitle(vm, h)), /title_restart_fx_04/);
+  vm.stopRestartEffect();
+  assert.equal(vm.restartFxRevealed, true);
+  assert.equal(vm.restartFxActive, false);
+});
+
 test('initTitle respects persisted disabled state and volume', () => {
   const { vm, nativeCalls } = makeVm({ bgmEnabled: false, bgmVolume: 0.3 });
   assert.equal(vm.bgmOn, false);

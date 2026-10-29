@@ -52,12 +52,20 @@
   border-color: #fff2ad;
   background-color: #8a2c63;
 }
+.title-restart-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 800px;
+  height: 220px;
+  z-index: 160;
+}
 .title-restart-fx {
   position: absolute;
   left: 0;
   top: 0;
-  width: 0;
-  height: 0;
+  width: 800px;
+  height: 220px;
   z-index: 160;
 }
 .title-restart-flash {

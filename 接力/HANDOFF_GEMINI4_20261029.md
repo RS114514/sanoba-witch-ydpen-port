@@ -26,7 +26,7 @@
 - `/Volumes/500GB/sanoba-witch-ydpen-port/test_results/multimodal_review/title_after_gallery_restart.png`：开始游戏 + 重新开始 + 右上流程图。
 - `/Volumes/500GB/sanoba-witch-ydpen-port/test_results/multimodal_review/game_restart_clicked.png`：点击重新开始进入 `nene_restart` 第 0 句，章节 0-0，1/5507。
 
-仍未完全复刻原版的**Restart 惊喜出场动画**：原版 `custom.ks` 的 `*restart_open`（约 329-353 行）会播放 `title_restart_eff1/eff2` 特效并设置 `sf.title_restart`。本轮只做了独立按钮和视觉强调，没有做粒子/旋转/缩放演出。若要更高还原度，下一项优先做这个。
+原版 `custom.ks` 的 `*restart_open`（约 329-353 行）星芒演出也已补上，见 1.6。原版 `sf.title_restart` 的一次性语义用 `settings.titleRestartSeen` 持久化；第二次进入标题不再重复播放。
 
 ### 1.2 选择支：四选项 + 右侧确认
 - 选项不再“一点即生效”；点选项只高亮，右侧大按钮「✔ 确定选择 / CONFIRM」才执行。
@@ -64,21 +64,30 @@
   - 全屏立绘特写背景 `gallery-fs-bg`：原设为 `800x220`（3.63:1 畸变），现设为 `width: 391px; height: 220px; left: 204px;`，严格符合 16:9（1.777:1）居中显示，左右对称留黑边，杜绝拉伸。
   - CG 分组与立绘分组卡片封面 `g-group-card-bg`, `g-stand-group-img`：由 `120x88` 改为 `width: 156px; height: 88px; margin-left: -18px;`，以 16:9 比例在 120px 容器内居中裁切，不再被横向挤扁。
 - **测试套件 Node.js ESM mock 兼容修复**：
-  - 修复了 `tools/test_nene_restart.mjs` 中对 `../../media.js` import 的正则匹配，确保 6 套单测 60 项本地回归 100% 全部通过。
+  - 修复了 `tools/test_nene_restart.mjs` 中对 `../../media.js` import 的正则匹配；当前 7 套单测 71 项本地回归全部通过。
 
-### 1.6 其他已验证
+### 1.6 Restart 星芒“惊喜”演出（本轮新增）
+- 触发条件：`view === 'title' && hasNeneCleared && !hasNeneRestartCleared && settings.titleRestartSeen !== true`。首次触发即写入 `titleRestartSeen`，等价于原版 `sf.title_restart` 的一次性演出。
+- 演出内容：原版 `title_restart_eff1/eff2` 星芒 + 5 段收缩 + 白闪 + 原版 SE（`≪エフェクト19`、`≪エフェクト８`），随后显示金框「重新开始」。菜单不被永久替换，「开始游戏」始终保留。
+- 关键实现：`title.js:playRestartEffect`（时间线 0/220/440/660/880ms + 白闪 + 1560ms 收尾）、`RESTART_FX_PHASES`、`title.js` render 中的 `title-restart-fx/title-restart-layer/title-restart-flash`；`media.js` 的 `sysUrl/seUrl`；`root.js` 的 `restartFx*` 字段。
+- **Falcon 平台坑（务必牢记）**：
+  1. 官方 `title_restart_eff1/2.png` 实际是 **WebP** 内容套 `.png` 扩展名，笔上按扩展名解码会直接失败（表现为只有白闪、没有星芒）。已用 `sips -s format png` 转成真 PNG。
+  2. `<image>` 高度超过 220px 时整张不渲染，不能用原图直接放大铺屏。
+  3. Falcon 对已挂载 `<image>` 的 `src`、`opacity`、`width/height` 更新都不生效。当前用“阶段越深、包装 div 层数越多”的方式强制重新挂载图片（`RESTART_FX_PHASES[].depth`），实现 5 段收缩。
+  4. 预渲染帧放在设备 `/userdisk/gal_data/sanoba_witch/sys/title_restart_fx_XX.png`（24 张 800×220，工具：`tools/generate_restart_fx.py --src-dir <官方 sys 素材目录> --out build_assets/sys`）；当前只用到 `_04/_06/_08/_10/_13`，其余留给后续 canvas/视频方案。
+  5. SE 放在 `/userdisk/gal_data/sanoba_witch/se/restart_eff1.ogg`、`restart_eff2.ogg`，通过 `gal.playVoice` 播放（标题页无语音，不会抢占语音通道）。
+- 真机证据：`test_results/multimodal_review/title_restart_fx_giant.png`、`title_restart_fx_shrink.png`、`title_restart_fx_flash.png`、`title_restart_fx_done.png`；点击「重新开始」进入二周目第 0 句：`game_restart_verified.png`。
+- 已知限制：不是逐帧 60fps 旋转，而是 5 个预渲染尺寸 + 白闪；Falcon 若未来开放 canvas 2D 或视频叠加，可按 24 帧序列升级为连续旋转动画。
+
+### 1.7 其他已验证
 - 根响应式字段 `selectedChoiceIndex`、`hasNeneCleared`、`hasNeneRestartCleared` 已补到 `app/root.js`，否则点选高亮/重开按钮不会刷新。
-- 全部本地测试：**60 项 JS 全部通过**；`python3 build.py --check` 通过（373 个样式类）。
+- 全部本地测试：**71 项 JS 全部通过**（title/choice/core/afterstory/flowchart/gallery）；`python3 build.py --check` 通过（377 个样式类）。
 - 本轮最新包已编译安装；修改后请重新 `build.py --install` 再验收，不能拿旧包截图。
 
 ## 2. 仍需 Gemini 4 完成（按优先级）
 
-### P0：原版 Restart 惊喜演出
-目标不是再加一个弹窗，而是还原原版的“重新开始”按钮出场：
-
-1. 查 `scenario/main/custom.ks` 的 `*restart_open`（329-353）和 `title_restart_eff1/2` 素材。
-2. 在标题页检测 `hasNeneCleared && !hasNeneRestartCleared` 时，用 Falcon 可用的图片/透明度/位移/旋转做一次短暂演出；不要让菜单被永久替换。
-3. 演出后仍保持「开始游戏」和独立「重新开始」两个入口；如果实现成本过高，至少做静态金色强调，并在 `接力` 文档记录未完成原因。
+### P1（可选）：把 5 段星芒升级为连续动画
+现版本已能演出，但受 Falcon `<image>` 限制只有 5 个离散尺寸。若后续确认 `<canvas>` 2D 或 `gal.openVideo` 在本机稳定，可把 `sys/title_restart_fx_01..24.png` 作为 24 帧连续播放（16fps），替换 `title.js` 的 5 段 `RESTART_FX_PHASES`。不要为此回退现有可见效果；先在独立页面验证 canvas/video 不黑屏、不与 BGM 抢声卡。
 
 ### P0：五条路线的真实通关验证
 当前 `resolveRouteBranchAt` 的精确条件有单元测试，但没有用真实选择组合跑完每条线。请：
@@ -125,7 +134,7 @@
 ```bash
 cd /Volumes/500GB/sanoba-witch-ydpen-port
 
-# 全量本地回归（本轮 60 项通过）
+# 全量本地回归（本轮 71 项通过）
 node --experimental-vm-modules --test --test-timeout=8000 \
   tools/test_core_ui.mjs \
   tools/test_choices_ui.mjs \
@@ -155,16 +164,21 @@ adb -s 9DA2200007506350 pull /tmp/cap.png test_results/multimodal_review/<name>.
 ## 5. 建议的下一步顺序
 
 1. 先跑全量测试 + `build.py --check`，确认基线没有回归。
-2. 做 P0 的 Restart 演出（或明确记录暂不实现），再真机截图。
+2. 真机验收 Restart 星芒：准备 `clearedRoutes:["nene"]` 且无 `titleRestartSeen` 的设置，从鉴赏返回标题录屏确认星芒/白闪/按钮出现；再点「重新开始」确认 1/5507。
 3. 用真实选择组合验证 8485/9220 五个路线入口；记录每条线的 `choiceFlags`、跳转行和截图。
 4. 真机验证流程图第二次点击同一节点、4 选项确认、2/3 选项边界、存读档后重选。
-5. 校正标题菜单与原版 `allbtns2` 的差异，最后再处理视觉打磨。
+5. 校正标题菜单与原版 `allbtns2` 的差异，最后再处理视觉打磨；如确认 canvas/video 可用，再升级为 24 帧连续动画。
 6. 每完成一批改动，在 `/Volumes/500GB/qoder_cache/sanoba_asset_handoff_20261029/AGENT_COMM.txt` 追加时间、测试结果和截图路径。
 
 ## 6. 当前证据截图索引
 
 - `test_results/multimodal_review/title_after_gallery_restart.png`：开始游戏 + 重新开始 + 顶部流程图。
 - `test_results/multimodal_review/game_restart_clicked.png`：二周目重启第 0 句。
+- `test_results/multimodal_review/title_restart_fx_giant.png`：星芒巨幅登场（真机录制帧）。
+- `test_results/multimodal_review/title_restart_fx_shrink.png`：星芒收缩阶段。
+- `test_results/multimodal_review/title_restart_fx_flash.png`：白闪收尾。
+- `test_results/multimodal_review/title_restart_fx_done.png`：演出结束，金框「重新开始」出现。
+- `test_results/multimodal_review/game_restart_verified.png`：点击重新开始进入二周目第 0 句（1/5507）。
 - `test_results/multimodal_review/choice_four_options_v2.png`：4 选项 + 右侧确认。
 - `test_results/multimodal_review/choice_selected_v2.png`：选项高亮。
 - `test_results/multimodal_review/choice_confirm_result_v2.png`：确认后进入 8927。

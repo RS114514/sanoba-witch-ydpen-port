@@ -8,6 +8,15 @@ function titleBgmName() {
   return (STORY.meta && STORY.meta.titleBgm) || '';
 }
 
+// 预渲染的星芒收缩帧；depth 逐级 +1，用来强制 Falcon 重新挂载 <image>。
+var RESTART_FX_PHASES = [
+  { file: 'title_restart_fx_04', depth: 0 },
+  { file: 'title_restart_fx_06', depth: 1 },
+  { file: 'title_restart_fx_08', depth: 2 },
+  { file: 'title_restart_fx_10', depth: 3 },
+  { file: 'title_restart_fx_13', depth: 4 }
+];
+
 // 标题页读档/新游戏的安全场景解析：支持 main、角色线、二周目重启线与 after_* 剧本
 function safeScenario(value) {
   if (typeof value === 'string') {
@@ -75,7 +84,7 @@ export var titleMethods = {
     this._restartFxTimers = this._restartFxTimers || [];
     this._restartFxTimers.push(setTimeout(function () {
       self.playRestartEffect();
-    }, 260));
+    }, 80));
   },
   stopRestartEffect: function () {
     var timers = this._restartFxTimers || [];
@@ -83,7 +92,7 @@ export var titleMethods = {
     this._restartFxTimers = [];
     this.restartFxActive = false;
     this.restartFxFlash = 0;
-    this.restartFxOpacity = 0;
+    this.restartFxPhase = 0;
     this.restartFxHighlight = false;
     this.restartFxRevealed = true;
     this._restartFxSe2Played = false;
@@ -95,27 +104,26 @@ export var titleMethods = {
     }
     this.restartFxActive = true;
     this.restartFxRevealed = false;
+    this.restartFxPhase = 0;
     this._restartFxSe2Played = false;
     var G = getGal();
     if (G && typeof G.playVoice === 'function') {
       var se1 = seUrl('restart_eff1');
       if (se1) G.playVoice(se1, 0.55);
     }
-    // Falcon 不支持 CSS transform/rotate，用盒模型尺寸、left/top 与透明度
-    // 复刻原版星芒“收缩 → 爆开”的观感；时间线取自 custom.ks 的 1000/500ms。
+    // Falcon 不响应已挂载 image 的 src/opacity/size 更新，也无法旋转图片。
+    // 星芒使用预渲染的全屏帧，每个阶段加深一层包装 div 强制重新挂载图片，
+    // 形成 5 段收缩；随后白闪接管，时间线对应 custom.ks 的 1000ms/500ms。
     var frames = [
-      { at: 0, stage: 1, size: 920, cx: 300, cy: 110, opacity: 0 },
-      { at: 90, stage: 1, size: 880, cx: 300, cy: 110, opacity: 0.9 },
-      { at: 210, stage: 1, size: 760, cx: 320, cy: 110, opacity: 1 },
-      { at: 380, stage: 1, size: 560, cx: 300, cy: 110, opacity: 1 },
-      { at: 540, stage: 1, size: 400, cx: 220, cy: 110, opacity: 1 },
-      { at: 680, stage: 1, size: 260, cx: 120, cy: 110, opacity: 0.95 },
-      { at: 800, stage: 1, size: 150, cx: 20, cy: 110, opacity: 0.8 },
-      { at: 900, stage: 2, size: 100, cx: -50, cy: 110, opacity: 0.9, flash: 0.35 },
-      { at: 1010, stage: 2, size: 280, cx: 130, cy: 110, opacity: 0.75, flash: 0.6 },
-      { at: 1140, stage: 2, size: 480, cx: 300, cy: 110, opacity: 0.5, flash: 0.45 },
-      { at: 1280, stage: 2, size: 680, cx: 420, cy: 110, opacity: 0.28, flash: 0.25 },
-      { at: 1420, stage: 2, size: 860, cx: 500, cy: 110, opacity: 0.1, flash: 0.08 },
+      { at: 0, phase: 0 },
+      { at: 220, phase: 1 },
+      { at: 440, phase: 2 },
+      { at: 660, phase: 3 },
+      { at: 880, phase: 4, flash: 0.2 },
+      { at: 980, flash: 0.6 },
+      { at: 1150, flash: 0.45 },
+      { at: 1300, flash: 0.2 },
+      { at: 1450, flash: 0 },
       { at: 1560, done: true }
     ];
     var self = this;
@@ -130,7 +138,6 @@ export var titleMethods = {
           if (frame.done) {
             self.restartFxActive = false;
             self.restartFxFlash = 0;
-            self.restartFxOpacity = 0;
             self.restartFxRevealed = true;
             self.restartFxHighlight = true;
             self._restartFxTimers.push(setTimeout(function () {
@@ -138,7 +145,7 @@ export var titleMethods = {
             }, 900));
             return;
           }
-          if (frame.stage === 2 && !self._restartFxSe2Played) {
+          if (frame.phase === 4 && !self._restartFxSe2Played) {
             self._restartFxSe2Played = true;
             var gal = getGal();
             if (gal && typeof gal.playVoice === 'function') {
@@ -146,11 +153,7 @@ export var titleMethods = {
               if (se2) gal.playVoice(se2, 0.5);
             }
           }
-          self.restartFxStage = frame.stage;
-          self.restartFxSize = frame.size;
-          self.restartFxX = Math.round(frame.cx - frame.size / 2);
-          self.restartFxY = Math.round(frame.cy - frame.size / 2);
-          self.restartFxOpacity = frame.opacity;
+          if (typeof frame.phase === 'number') self.restartFxPhase = frame.phase;
           self.restartFxFlash = frame.flash || 0;
         }, frame.at));
       })(frames[i]);
@@ -515,20 +518,18 @@ export function renderTitle(vm, h) {
 
   // 原版 *restart_open 星芒演出（图片 + 白闪，位于菜单之上、弹窗之下）
   if (vm.restartFxActive) {
-    var fxSize = Number(vm.restartFxSize) || 0;
-    var fxOpacity = Number(vm.restartFxOpacity) || 0;
-    if (fxSize > 0 && fxOpacity > 0.005) {
-      children.push(h('image', {
-        staticStyle: S('title-restart-fx', {
-          left: (Number(vm.restartFxX) || 0) + 'px',
-          top: (Number(vm.restartFxY) || 0) + 'px',
-          width: fxSize + 'px',
-          height: fxSize + 'px',
-          opacity: fxOpacity
-        }),
-        attrs: { src: sysUrl(vm.restartFxStage === 2 ? 'title_restart_eff2' : 'title_restart_eff1') }
-      }));
+    var fxPhase = Number(vm.restartFxPhase) || 0;
+    if (fxPhase < 0) fxPhase = 0;
+    if (fxPhase >= RESTART_FX_PHASES.length) fxPhase = RESTART_FX_PHASES.length - 1;
+    var fxSpec = RESTART_FX_PHASES[fxPhase];
+    var fxNode = h('image', {
+      staticStyle: S('title-restart-fx'),
+      attrs: { src: sysUrl(fxSpec.file) }
+    });
+    for (var fi = 0; fi < fxSpec.depth; fi++) {
+      fxNode = h('div', { staticStyle: S('title-restart-layer') }, [fxNode]);
     }
+    children.push(fxNode);
     var fxFlash = Number(vm.restartFxFlash) || 0;
     if (fxFlash > 0.005) {
       children.push(h('div', {
