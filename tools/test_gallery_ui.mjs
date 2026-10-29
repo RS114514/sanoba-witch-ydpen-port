@@ -197,8 +197,9 @@ test('all rendered style names exist and Falcon spacing/borders use longhand', (
 test('all extracted CG families are grouped by their real route', () => {
   const counts = Object.fromEntries(heroes.map(key => [key, cgs.filter(c => c.group === key).length]));
   Object.assign(counts, { common: cgs.filter(c => c.group === 'main').length });
-  assert.deepEqual(counts, { nene: 25, meguru: 18, tsumugi: 18, touko: 18, wakana: 9, common: 4 });
-  assert.equal(cgs.length, 92);
+  Object.assign(counts, { sd: cgs.filter(c => c.group === 'sd').length });
+  assert.deepEqual(counts, { nene: 25, meguru: 18, tsumugi: 18, touko: 18, wakana: 9, common: 4, sd: 28 });
+  assert.equal(cgs.length, 120);
   assert.equal(new Set(cgs.map(c => c.file)).size, cgs.length);
 });
 
@@ -209,7 +210,7 @@ test('four tabs, all subgroups and stand controls stay visible without overlap',
     assert.equal(vm.galleryTab, tab);
     checkLayout(render(vm));
     if (tab === 'cg' || tab === 'scene') {
-      for (const key of tab === 'cg' ? [...heroes, 'common'] : heroes) {
+      for (const key of tab === 'cg' ? [...heroes, 'common', 'sd'] : heroes) {
         click(nodes(render(vm), 'g-group-card').find(node => node.props.key === key));
         assert.equal(vm[tab === 'cg' ? 'galleryCgGroup' : 'gallerySceneGroup'], key);
         checkLayout(render(vm));

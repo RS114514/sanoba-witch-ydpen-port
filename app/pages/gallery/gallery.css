@@ -163,9 +163,9 @@
   overflow: hidden;
 }
 .g-group-card {
-  width: 120px;
+  width: 104px;
   height: 136px;
-  margin-right: 8px;
+  margin-right: 6px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -174,13 +174,13 @@
 }
 .g-group-card-bg,
 .g-stand-group-img {
-  width: 156px;
+  width: 138px;
   height: 88px;
-  margin-left: -18px;
+  margin-left: -17px;
   background-color: #120a16;
 }
 .g-group-info {
-  width: 120px;
+  width: 104px;
   height: 48px;
   display: flex;
   flex-direction: column;
@@ -451,6 +451,9 @@
 .gallery-fs-nav-left,
 .gallery-fs-nav-right,
 .gallery-fs-zoom-btn,
+.gallery-fs-zoom-in,
+.gallery-fs-zoom-out,
+.gallery-fs-zoom-reset,
 .gallery-fs-close-badge {
   position: absolute;
   display: flex;
@@ -482,23 +485,41 @@
   color: #f7e6e9;
   overflow: hidden;
 }
-.gallery-fs-zoom-btn {
+.gallery-fs-zoom-out {
   left: 8px;
   top: 8px;
-  width: 60px;
+  width: 46px;
+  height: 28px;
+}
+.gallery-fs-zoom-btn {
+  left: 58px;
+  top: 8px;
+  width: 50px;
+  height: 28px;
+  background-color: #5c2447;
+}
+.gallery-fs-zoom-in {
+  left: 112px;
+  top: 8px;
+  width: 46px;
+  height: 28px;
+}
+.gallery-fs-zoom-reset {
+  left: 162px;
+  top: 8px;
+  width: 46px;
   height: 28px;
 }
 .gallery-fs-close-badge {
-  left: 704px;
+  left: 712px;
   top: 8px;
-  width: 88px;
+  width: 80px;
   height: 28px;
   background-color: #8c1d35;
 }
 .gallery-fs-zoom-text,
 .gallery-fs-close-text {
-  height: 18px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: bold;
   text-align: center;
   color: #f7e6e9;
@@ -719,7 +740,7 @@
   width: 58px;
 }
 .g-stand-dress-btn {
-  width: 90px;
+  width: 74px;
 }
 .g-stand-dress-btn-active {
   background-color: #b82647;

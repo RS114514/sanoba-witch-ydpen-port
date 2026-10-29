@@ -334,6 +334,12 @@ export var titleMethods = {
     this.titleModalType = 'settings';
     this.titleConfirmModal = null;
   },
+  openTitleAbout: function () {
+    this.titleModalType = 'about';
+  },
+  closeTitleAbout: function () {
+    this.titleModalType = 'settings';
+  },
   toggleTitleBgm: function () {
     var G = getGal();
     this.bgmOn = !this.bgmOn;
@@ -364,9 +370,38 @@ export var titleMethods = {
     this.titleModalType = '';
   },
   confirmTitleExit: function () {
-    if (this.$page && typeof this.$page.finish === 'function') {
-      this.$page.finish();
+    var p = this.$page || globalThis.$page;
+    if (p) {
+      if (typeof p.finish === 'function') {
+        try { p.finish(); return; } catch (e) {}
+      }
+      if (typeof p.pop === 'function') {
+        try { p.pop(); return; } catch (e) {}
+      }
+      if (typeof p.moveToBack === 'function') {
+        try { p.moveToBack(); return; } catch (e) {}
+      }
+      if (typeof p.onBackPressed === 'function') {
+        try { p.onBackPressed(); return; } catch (e) {}
+      }
     }
+    try {
+      if (typeof $falcon !== 'undefined' && typeof $falcon.closeApp === 'function') {
+        $falcon.closeApp();
+        return;
+      }
+    } catch (e) {}
+    try {
+      if (typeof closeApp === 'function') {
+        closeApp();
+        return;
+      }
+    } catch (e) {}
+    try {
+      if (typeof window !== 'undefined' && typeof window.close === 'function') {
+        window.close();
+      }
+    } catch (e) {}
   },
   onMenuTouchStart: function (e) {
     if (e && e.changedTouches && e.changedTouches[0]) {
@@ -576,22 +611,58 @@ export function renderTitle(vm, h) {
                   ])
                 ])
               ]),
-              h('div', { staticStyle: S('title-system-row') }, [
-                h('text', { staticStyle: S('title-system-label') }, '游玩数据'),
+              h('div', { staticStyle: S('title-system-actions-row') }, [
                 h('div', {
                   staticStyle: S('title-system-btn title-system-clear-btn'),
                   on: { click: function () { vm.promptClearAllData(); } }
                 }, [
                   h('text', { staticStyle: S('title-system-btn-text') }, '清除所有数据')
+                ]),
+                h('div', {
+                  staticStyle: S('title-system-btn title-system-about-btn'),
+                  on: { click: function () { vm.openTitleAbout(); } }
+                }, [
+                  h('text', { staticStyle: S('title-system-btn-text') }, '关于')
+                ]),
+                h('div', {
+                  staticStyle: S('title-system-btn title-system-close-btn'),
+                  on: { click: function () { vm.closeTitleModal(); } }
+                }, [
+                  h('text', { staticStyle: S('title-system-btn-text') }, '退出设置')
                 ])
+              ])
+            ])
+          ])
+        ])
+      );
+    } else if (vm.titleModalType === 'about') {
+      children.push(
+        h('div', { staticStyle: S('title-system-mask') }, [
+          h('div', { staticStyle: S('title-system-box') }, [
+            h('div', { staticStyle: S('title-system-header') }, [
+              h('text', { staticStyle: S('title-system-title') }, '❖ 关于 ABOUT ❖'),
+              h('text', { staticStyle: S('title-system-subtitle') }, '魔女的夜宴 词典笔移植版')
+            ]),
+            h('div', { staticStyle: S('title-about-content') }, [
+              h('div', { staticStyle: S('title-about-item') }, [
+                h('text', { staticStyle: S('title-about-label') }, '作者哔哩哔哩:'),
+                h('text', { staticStyle: S('title-about-val-highlight') }, 'RS_TV')
+              ]),
+              h('div', { staticStyle: S('title-about-item') }, [
+                h('text', { staticStyle: S('title-about-label') }, '本游戏移植:'),
+                h('text', { staticStyle: S('title-about-val') }, 'github.com/RS114514/sanoba-witch-ydpen-port')
+              ]),
+              h('div', { staticStyle: S('title-about-item') }, [
+                h('text', { staticStyle: S('title-about-label') }, '游戏引擎:'),
+                h('text', { staticStyle: S('title-about-val') }, 'github.com/RS114514/RibbonEngine')
               ])
             ]),
             h('div', { staticStyle: S('title-system-footer') }, [
               h('div', {
-                staticStyle: S('title-system-btn title-system-close'),
-                on: { click: function () { vm.closeTitleModal(); } }
+                staticStyle: S('title-system-btn title-about-back-btn'),
+                on: { click: function () { vm.closeTitleAbout(); } }
               }, [
-                h('text', { staticStyle: S('title-system-btn-text') }, '返回标题')
+                h('text', { staticStyle: S('title-system-btn-text') }, '返回设置')
               ])
             ])
           ])

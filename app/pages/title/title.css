@@ -10,23 +10,35 @@
 .title-btn-sub, .title-btn-sub-highlight, .title-btn-sub-gold { font-size: 8px; line-height: 9px; color: #e5c4ec; }
 .title-btn-sub-gold { color: #f5d88e; }
 .title-system-mask { position: absolute; left: 0; top: 0; width: 800px; height: 220px; background-color: rgba(8, 3, 14, 0.86); display: flex; align-items: center; justify-content: center; z-index: 200; }
-.title-system-box { width: 472px; height: 196px; position: relative; background-color: #201025; border-width: 1px; border-style: solid; border-color: #d6a0c0; border-radius: 6px; overflow: hidden; }
-.title-system-header { position: absolute; left: 14px; top: 8px; width: 442px; height: 24px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; border-bottom-width: 1px; border-bottom-style: solid; border-bottom-color: #714163; }
+.title-system-box { width: 472px; height: 196px; position: relative; background-color: #201025; border-width: 1px; border-style: solid; border-color: #e5b382; border-radius: 6px; overflow: hidden; }
+.title-system-header { position: absolute; left: 14px; top: 8px; width: 442px; height: 24px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; border-bottom-width: 1px; border-bottom-style: solid; border-bottom-color: #4a2233; }
 .title-system-title { font-size: 14px; font-weight: bold; color: #f7d9e6; }
 .title-system-subtitle { font-size: 10px; color: #d0acc6; }
-.title-system-content { position: absolute; left: 14px; top: 40px; width: 442px; height: 108px; display: flex; flex-direction: column; justify-content: space-between; }
-.title-system-row { width: 442px; height: 32px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.title-system-content { position: absolute; left: 14px; top: 40px; width: 442px; height: 144px; display: flex; flex-direction: column; justify-content: space-between; }
+.title-system-row { width: 442px; height: 38px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
 .title-system-label { font-size: 13px; font-weight: bold; color: #fff0e3; }
-.title-system-btn { width: 132px; height: 30px; background-color: #482039; border-width: 1px; border-style: solid; border-color: #b87d9b; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+.title-system-btn { height: 34px; background-color: #4b1f33; border-width: 1px; border-style: solid; border-color: #8d4f6c; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
 .title-system-btn-text { font-size: 12px; font-weight: bold; color: #fff6e9; }
-.title-system-switch { background-color: #743354; border-color: #e3b2cc; }
-.title-system-volume { width: 172px; height: 30px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
-.title-system-volume-btn { width: 44px; height: 30px; }
+.title-system-switch { width: 132px; background-color: #85223a; border-color: #e58ca2; }
+.title-system-volume { width: 172px; height: 34px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.title-system-volume-btn { width: 48px; height: 34px; background-color: #4b1f33; border-color: #8d4f6c; }
 .title-system-volume-text { font-size: 18px; font-weight: bold; color: #ffe7d7; }
 .title-system-percent { width: 64px; font-size: 15px; font-weight: bold; color: #f7d9e6; text-align: center; }
+.title-system-actions-row { width: 442px; height: 36px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin-top: 4px; }
+.title-system-clear-btn { width: 132px; height: 34px; background-color: #85223a; border-color: #e58ca2; }
+.title-system-about-btn { width: 110px; height: 34px; background-color: #4b1f33; border-color: #8d4f6c; }
+.title-system-close-btn { width: 120px; height: 34px; background-color: #4b1f33; border-color: #8d4f6c; }
+
+/* 关于 弹窗 */
+.title-about-content { position: absolute; left: 14px; top: 40px; width: 442px; height: 104px; display: flex; flex-direction: column; justify-content: space-around; }
+.title-about-item { width: 442px; display: flex; flex-direction: row; align-items: center; }
+.title-about-label { font-size: 11px; color: #d0acc6; width: 96px; }
+.title-about-val-highlight { font-size: 13px; font-weight: bold; color: #ffb834; }
+.title-about-val { font-size: 11px; font-weight: bold; color: #f7d9e6; }
+.title-about-back-btn { width: 110px; height: 30px; }
+
 .title-system-footer { position: absolute; left: 14px; bottom: 10px; width: 442px; height: 30px; display: flex; flex-direction: row; align-items: center; justify-content: flex-end; }
 .title-system-close { width: 110px; height: 30px; }
-.title-system-clear-btn { width: 132px; height: 30px; background-color: #642438; border-color: #d78999; }
 .title-exit-box { height: 158px; }
 .title-exit-content { position: absolute; left: 14px; top: 42px; width: 442px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .title-exit-message { font-size: 15px; font-weight: bold; color: #f8e7e0; }

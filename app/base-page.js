@@ -67,6 +67,7 @@ function attachRoot(page) {
   try {
     if (page && typeof page.setRootComponentOptions === 'function') {
       page.setRootComponentOptions(Component);
+      if (page.$root) page.$root.$page = page;
       try { console.warn('[vp-ui] 基类挂载: setRootComponentOptions 已调用'); } catch (e) {}
       return true;
     }
@@ -74,6 +75,7 @@ function attachRoot(page) {
   try {
     if (page && typeof page.setRootComponent === 'function') {
       page.setRootComponent(Component);
+      if (page.$root) page.$root.$page = page;
       try { console.warn('[vp-ui] 基类挂载: setRootComponent 已调用'); } catch (e) {}
       return true;
     }
@@ -87,17 +89,22 @@ export class BasePage extends ResourcePage {
     this.options = options || {};
     try { console.warn('[vp-ui] BasePage.onLoad 到'); } catch (e) {}
     attachRoot(this);
+    if (this.$root) this.$root.$page = this;
   }
 
   onNewOptions(options) {
     try { super.onNewOptions(options); } catch (e) {}
     this.options = options || {};
     attachRoot(this);
+    if (this.$root) this.$root.$page = this;
   }
 
   onShow() {
     try { super.onShow(); } catch (e) {}
-    if (this.$root && this.$root.onShow) this.$root.onShow();
+    if (this.$root) {
+      this.$root.$page = this;
+      if (this.$root.onShow) this.$root.onShow();
+    }
   }
 
   onHide() {
@@ -114,10 +121,50 @@ export class BasePage extends ResourcePage {
     }
   }
 
+  finish() {
+    try {
+      if (typeof super.finish === 'function') {
+        super.finish();
+        return;
+      }
+    } catch (e) {}
+    try {
+      if (typeof this.pop === 'function') {
+        this.pop();
+        return;
+      }
+    } catch (e) {}
+    try {
+      if (typeof this.moveToBack === 'function') {
+        this.moveToBack();
+        return;
+      }
+    } catch (e) {}
+    try {
+      if (typeof this.onBackPressed === 'function') {
+        this.onBackPressed();
+        return;
+      }
+    } catch (e) {}
+    try {
+      if (typeof $falcon !== 'undefined' && typeof $falcon.closeApp === 'function') {
+        $falcon.closeApp();
+        return;
+      }
+    } catch (e) {}
+    try {
+      if (typeof closeApp === 'function') {
+        closeApp();
+        return;
+      }
+    } catch (e) {}
+  }
+
   beforeVueInstantiate(Vue) {
     if (super.beforeVueInstantiate) super.beforeVueInstantiate(Vue);
     Vue.prototype.$workspace = globalThis.$workspace;
     Vue.prototype.$appid = globalThis.$appid;
+    Vue.prototype.$page = this;
   }
 }
 

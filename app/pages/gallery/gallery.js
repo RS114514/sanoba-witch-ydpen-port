@@ -23,14 +23,15 @@ function cardLeft(index, pageSize, step, pan) {
   return Math.floor(index / pageSize) * SCREEN_WIDTH + (index % pageSize) * step + inset + (pan || 0);
 }
 
-// CG 分组：5 大女主 + 共通
+// CG 分组：5 大女主 + 共通 + Q版SD
 var CG_GROUPS = [
   { key: 'nene', name: '宁宁' },
   { key: 'meguru', name: '巡' },
   { key: 'tsumugi', name: '紬' },
   { key: 'touko', name: '憧子' },
   { key: 'wakana', name: '和奏' },
-  { key: 'common', name: '共通' }
+  { key: 'common', name: '共通' },
+  { key: 'sd', name: 'Q版SD' }
 ];
 
 var CG_LIST = [];
@@ -103,10 +104,10 @@ function sceneGroupMaxPan(vm) {
 
 // 原版「立绘鉴赏」：5 名主角，服装/表情差分来自设备端 stand 与 fg 目录
 var STAND_CHARS = [
-  { key: 'nene', name: '绫地宁宁', char: '宁宁', dresses: ['制服', '私服', '魔女服', '裸'], faces: 20 },
-  { key: 'meguru', name: '因幡巡', char: '巡', dresses: ['制服', '私服', '裸'], faces: 20 },
-  { key: 'tsumugi', name: '椎名紬', char: '紬', dresses: ['制服', 'コスプレ', '裸'], faces: 20 },
-  { key: 'touko', name: '户隐憧子', char: '憧子', dresses: ['制服', '私服', 'デート服', '裸'], faces: 20 },
+  { key: 'nene', name: '绫地宁宁', char: '宁宁', dresses: ['制服', '私服', '魔女服', '部屋着', '裸'], faces: 20 },
+  { key: 'meguru', name: '因幡巡', char: '巡', dresses: ['制服', '私服', '部屋着', 'コスプレ', '裸'], faces: 20 },
+  { key: 'tsumugi', name: '椎名紬', char: '紬', dresses: ['制服', '私服', '魔女服', 'コスプレ', '裸'], faces: 20 },
+  { key: 'touko', name: '户隐憧子', char: '憧子', dresses: ['制服', '私服', 'デート服', '部屋着', '裸'], faces: 20 },
   { key: 'wakana', name: '假屋和奏', char: '和奏', dresses: ['制服', '私服', 'ウェイトレス', '裸'], faces: 20 }
 ];
 
@@ -537,11 +538,34 @@ export var galleryMethods = {
     if (typeof this.$forceUpdate === 'function') this.$forceUpdate();
   },
 
+  zoomInCg: function () {
+    var cur = this.galleryZoomIndex || 0;
+    if (cur < ZOOM_LEVELS.length - 1) {
+      this.galleryZoomIndex = cur + 1;
+      var z = ZOOM_LEVELS[this.galleryZoomIndex];
+      this.galleryImgPanX = Math.round((SCREEN_WIDTH - z.w) / 2);
+      this.galleryImgPanY = Math.round((SCREEN_HEIGHT - z.h) / 2);
+      if (typeof this.$forceUpdate === 'function') this.$forceUpdate();
+    }
+  },
+
+  zoomOutCg: function () {
+    var cur = this.galleryZoomIndex || 0;
+    if (cur > 0) {
+      this.galleryZoomIndex = cur - 1;
+      var z = ZOOM_LEVELS[this.galleryZoomIndex];
+      this.galleryImgPanX = Math.round((SCREEN_WIDTH - z.w) / 2);
+      this.galleryImgPanY = Math.round((SCREEN_HEIGHT - z.h) / 2);
+      if (typeof this.$forceUpdate === 'function') this.$forceUpdate();
+    }
+  },
+
   resetCgZoom: function () {
     this.galleryZoomIndex = 0;
     var z = ZOOM_LEVELS[0];
     this.galleryImgPanX = Math.round((SCREEN_WIDTH - z.w) / 2);
     this.galleryImgPanY = Math.round((SCREEN_HEIGHT - z.h) / 2);
+    if (typeof this.$forceUpdate === 'function') this.$forceUpdate();
   },
 
   clampCgPan: function () {
@@ -571,6 +595,7 @@ export var galleryMethods = {
       this._imgTouchStartY = t.pageY || t.clientY || 0;
       this._imgStartPanX = this.galleryImgPanX || 0;
       this._imgStartPanY = this.galleryImgPanY || 0;
+      this._imgMoved = false;
     }
   },
 
@@ -581,6 +606,9 @@ export var galleryMethods = {
       var cy = t.pageY || t.clientY || 0;
       var dx = cx - this._imgTouchStartX;
       var dy = cy - this._imgTouchStartY;
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+        this._imgMoved = true;
+      }
       this.galleryImgPanX = this._imgStartPanX + dx;
       this.galleryImgPanY = this._imgStartPanY + dy;
       this.clampCgPan();
@@ -589,6 +617,9 @@ export var galleryMethods = {
   },
 
   onImgTouchEnd: function () {
+    if (!this._imgMoved) {
+      this.cycleCgZoom();
+    }
   },
 
   onGalleryTouchStart: function (e) {
@@ -863,10 +894,28 @@ export function renderGallery(vm, h) {
         h('text', { staticStyle: S('gallery-fs-nav-text') }, '›')
       ]),
       h('div', {
+        staticStyle: S('gallery-fs-zoom-out'),
+        on: { click: function () { vm.zoomOutCg(); } }
+      }, [
+        h('text', { staticStyle: S('gallery-fs-zoom-text') }, '- 缩小')
+      ]),
+      h('div', {
         staticStyle: S('gallery-fs-zoom-btn'),
         on: { click: function () { vm.cycleCgZoom(); } }
       }, [
         h('text', { staticStyle: S('gallery-fs-zoom-text') }, zoom.label)
+      ]),
+      h('div', {
+        staticStyle: S('gallery-fs-zoom-in'),
+        on: { click: function () { vm.zoomInCg(); } }
+      }, [
+        h('text', { staticStyle: S('gallery-fs-zoom-text') }, '+ 放大')
+      ]),
+      h('div', {
+        staticStyle: S('gallery-fs-zoom-reset'),
+        on: { click: function () { vm.resetCgZoom(); } }
+      }, [
+        h('text', { staticStyle: S('gallery-fs-zoom-text') }, '重置')
       ]),
       h('div', {
         staticStyle: S('gallery-fs-close-badge'),
@@ -906,10 +955,28 @@ export function renderGallery(vm, h) {
         })
       ]),
       h('div', {
+        staticStyle: S('gallery-fs-zoom-out'),
+        on: { click: function () { vm.zoomOutCg(); } }
+      }, [
+        h('text', { staticStyle: S('gallery-fs-zoom-text') }, '- 缩小')
+      ]),
+      h('div', {
         staticStyle: S('gallery-fs-zoom-btn'),
         on: { click: function () { vm.cycleCgZoom(); } }
       }, [
         h('text', { staticStyle: S('gallery-fs-zoom-text') }, sceneZoom.label)
+      ]),
+      h('div', {
+        staticStyle: S('gallery-fs-zoom-in'),
+        on: { click: function () { vm.zoomInCg(); } }
+      }, [
+        h('text', { staticStyle: S('gallery-fs-zoom-text') }, '+ 放大')
+      ]),
+      h('div', {
+        staticStyle: S('gallery-fs-zoom-reset'),
+        on: { click: function () { vm.resetCgZoom(); } }
+      }, [
+        h('text', { staticStyle: S('gallery-fs-zoom-text') }, '重置')
       ]),
       h('div', {
         staticStyle: S('gallery-fs-nav-left'),

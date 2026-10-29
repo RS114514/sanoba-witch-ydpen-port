@@ -65,6 +65,10 @@ export function voicePath(name) {
 }
 
 export function cgPath(name) {
+  var str = String(name || '').toLowerCase();
+  if (str.indexOf('sd') === 0) {
+    return assetPath('sd', name, '.png');
+  }
   return assetPath('cg', name, '.png');
 }
 

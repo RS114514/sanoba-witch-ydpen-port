@@ -1072,6 +1072,13 @@ export var gameMethods = {
     this.clearAutoTimer();
     this.modalType = '';
     this.confirmModal = null;
+    if (this.currentScenario && this.currentScenario.indexOf('after_') === 0) {
+      this.view = 'afterstory';
+      if (typeof this.initAfterStory === 'function') {
+        this.initAfterStory();
+      }
+      return;
+    }
     this.view = 'title';
     if (typeof this.initTitle === 'function') {
       this.initTitle();
@@ -1180,7 +1187,7 @@ export function renderGame(vm, h) {
       ])
     ]),
 
-    // 3. 右侧大尺寸触控快捷栏（88px x 220px，4 个核心大按键）
+    // 3. 右侧大尺寸触控快捷栏（88px x 220px，6 个核心触控按键）
     h('div', { staticStyle: S('game-ctrl-pane') }, [
       // (1) 语音
       h('div', {
@@ -1209,7 +1216,25 @@ export function renderGame(vm, h) {
         h('text', { staticStyle: S(vm.skipMode ? 'game-ctrl-btn-sub-active' : 'game-ctrl-btn-sub') }, 'SKIP')
       ]),
 
-      // (4) 菜单
+      // (4) 保存
+      h('div', {
+        staticStyle: S('game-ctrl-btn'),
+        on: { click: function () { vm.openGameModal('save'); } }
+      }, [
+        h('text', { staticStyle: S('game-ctrl-btn-title') }, '💾 保存'),
+        h('text', { staticStyle: S('game-ctrl-btn-sub') }, 'SAVE')
+      ]),
+
+      // (5) 读取
+      h('div', {
+        staticStyle: S('game-ctrl-btn'),
+        on: { click: function () { vm.openGameModal('load'); } }
+      }, [
+        h('text', { staticStyle: S('game-ctrl-btn-title') }, '📂 读取'),
+        h('text', { staticStyle: S('game-ctrl-btn-sub') }, 'LOAD')
+      ]),
+
+      // (6) 菜单
       h('div', {
         staticStyle: S('game-ctrl-btn'),
         on: { click: function () { vm.openGameModal('menu'); } }
@@ -1421,7 +1446,9 @@ export function renderGame(vm, h) {
       h('div', { staticStyle: S('game-menu-row') }, [
         menuBtn('保存进度', 'SAVE GAME', function () { vm.openGameModal('save'); }),
         menuBtn('读取进度', 'LOAD GAME', function () { vm.openGameModal('load'); }),
-        menuBtn('返回标题', 'RETURN TITLE', function () { vm.exitToTitle(); })
+        menuBtn((vm.currentScenario && vm.currentScenario.indexOf('after_') === 0) ? '返回后日谈' : '返回标题',
+                (vm.currentScenario && vm.currentScenario.indexOf('after_') === 0) ? 'RETURN AFTER' : 'RETURN TITLE',
+                function () { vm.exitToTitle(); })
       ]),
       h('text', { staticStyle: S('game-menu-notice') }, vm.menuNotice || ' ')
     ]);
