@@ -376,6 +376,13 @@ def main():
     print("      注意：.amr 只含代码/图标/原生插件，不含游戏资源。")
 
     if args.install:
+        asset_root = "/userdisk/gal_data/sanoba_witch"
+        for extra in ("sys", "se"):
+            local = os.path.join(HERE, "build_assets", extra)
+            if os.path.isdir(local):
+                adb("shell", "mkdir -p %s/%s" % (asset_root, extra))
+                adb("push", local + "/.", "%s/%s/" % (asset_root, extra))
+                print("      [assets] %s/ 已同步" % extra)
         print("[+] 安装到词典笔 (appid=%s)" % args.appid)
         adb("push", amr_path, "/tmp/sanoba_witch.amr")
         adb("push", amr_path, "/userdisk/skip_re/amr/sanoba_witch-%s.amr" % args.version)

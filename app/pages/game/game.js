@@ -77,7 +77,7 @@ var CHOICE_SCRIPTS = [
     ['*009_01B',280,32,['*dummyselect3'],'f.sel_flag = 0'], ['*dummyselect3',312,0,[]],
     ['*009_03A',312,38,['*009_03com']],
     ['*009_03B',350,63,[['f.wak_flag != 1 || !(sf.clear_nene||sf.clear_meguru||sf.clear_tsumugi||sf.clear_touko)','*009_wak_com'],'*dummy1']],
-    ['*dummy1',413,63,['*009_wak_com']], ['*009_wak_com',476,6,['*009_03com']],
+    ['*dummy1',413,63,['*009_wak_com'],'f.wak_flag ++'], ['*009_wak_com',476,6,['*009_03com']],
     ['*009_03com',482,0,['*009_01com']], ['*009_01com',482,79,['*dummyselect4'],'f.sel_flag = 0'],
     ['*dummyselect4',561,0,[]], ['*009_04A',561,4,['*009_04com']],
     ['*009_04B',565,7,['*009_04com']], ['*009_04com',572,116,[]]
@@ -291,12 +291,16 @@ function resolveChoiceOptionLine(option, choice) {
 }
 
 function choicePath(vm, scenario) {
-  var result = { skips: [], entries: [], excluded: [] };
+  var result = { skips: [], entries: [], excluded: [], flags: {} };
   var cleared = (readSettings() || {}).clearedRoutes || [];
+  var hasExplicitSelections = vm.choiceSelections && Object.keys(vm.choiceSelections).length > 0;
+  var accumulatedFlags = hasExplicitSelections
+    ? { sel: 0, eye: 0, glass: 0 }
+    : Object.assign({}, vm.choiceFlags, { sel: 0, eye: 0, glass: 0 });
   for (var si = 0; si < CHOICE_SCRIPTS.length; si++) {
     var script = CHOICE_SCRIPTS[si];
     if (script[0] !== scenario || typeof script.base !== 'number') continue;
-    var flags = Object.assign({}, vm.choiceFlags, { sel: 0, eye: 0, glass: 0 });
+    var flags = Object.assign({}, accumulatedFlags, { sel: 0, eye: 0, glass: 0 });
     applyChoiceOperations(flags, choiceOperations(script[2]) || [], true);
     var scene = script[3][0];
     for (var steps = 0; scene && steps < script[3].length * 2; steps++) {
@@ -319,10 +323,10 @@ function choicePath(vm, scenario) {
       }
       var next;
       if (choice) {
-        applyChoiceOperations(flags, choiceOperations(selected.exp) || [], true);
+        applyChoiceOperations(flags, choiceOperations(selected.exp) || [], false);
         next = selected.targetNode ? script.nodes[selected.targetNode] : nextChoiceScene(script, scene, flags, cleared);
       } else {
-        applyChoiceOperations(flags, choiceOperations(scene[4]) || [], true);
+        applyChoiceOperations(flags, choiceOperations(scene[4]) || [], false);
         next = nextChoiceScene(script, scene, flags, cleared);
       }
       next = skipEmptyChoiceScenes(script, next, flags, cleared);
@@ -336,7 +340,9 @@ function choicePath(vm, scenario) {
       }
       scene = next;
     }
+    accumulatedFlags = flags;
   }
+  result.flags = accumulatedFlags;
   return result;
 }
 function previousChoicePosition(vm, line) {
@@ -697,8 +703,8 @@ export var gameMethods = {
 
   resolveRouteBranchAt: function (line) {
     if (this.currentScenario !== 'main') return null;
-    var data = getActiveScenario(this);
-    var flags = this.choiceFlags || {};
+    var path = choicePath(this, 'main');
+    var flags = Object.assign({}, this.choiceFlags, path.flags);
 
     // scenario_json/018 scene 2: f.wak_flag == 3 -> 和奏线
     if (line >= WAKANA_ROUTE_LINE && flags.wak === 3) return 'wakana';

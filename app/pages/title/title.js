@@ -499,15 +499,15 @@ export function renderTitle(vm, h) {
       attrs: { src: titleBgUrl() }
     }),
 
-    // 顶部小入口：二周目按钮出现时流程图仍可访问
-    h('div', { staticStyle: S('title-top-bar') }, [
+    // 顶部小入口：仅在二周目「重新开始」占据左列第 4 格时显示，平时不重复显示
+    restartButton ? h('div', { staticStyle: S('title-top-bar') }, [
       h('div', {
         staticStyle: S('title-bgm-pill'),
         on: { click: function () { log('click top flowchart'); vm.openFlowchartModal(); } }
       }, [
         h('text', { staticStyle: S('title-bgm-pill-text') }, '流程图')
       ])
-    ]),
+    ]) : null,
 
     // 2. 双列 8 个主菜单按钮
     h('div', { staticStyle: S('title-menu-container') }, [

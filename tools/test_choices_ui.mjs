@@ -243,3 +243,81 @@ test('original route entry lines switch to the chosen heroine route', async () =
   vm.nextLine();
   assert.equal(vm.currentScenario, 'nene');
 });
+
+test('all five heroine routes are reachable via real in-game choice sequences and unlock restart/afterstory', async () => {
+  const { api, vm } = await load();
+  api.writeSettings({ clearedRoutes: [] });
+
+  const pickAt = (line, optIdx) => {
+    vm.currentLine = line;
+    vm.applyCurrentLine(false);
+    assert.ok(vm.activeChoice, `expected choice at ${vm.currentScenario}:${line}`);
+    vm.highlightChoiceOption(vm.activeChoice.options.find(o => o.index === optIdx));
+    vm.confirmChoiceOption();
+    assert.equal(vm.activeChoice, null);
+  };
+
+  // 1. Wakana route is locked before clearing any of the 4 main heroines (max wak = 2)
+  vm.choiceSelections = {};
+  vm.choiceFlags = {};
+  vm.initGame('main', 0);
+  for (const [line, idx] of [[2337, 1], [3877, 2], [4049, 2], [4993, 1]]) pickAt(line, idx);
+  assert.equal(vm.resolveRouteBranchAt(8485), null);
+
+  // 2. Play through Nene, Meguru, Tsumugi, Touko via real choice sequences
+  const mainRoutes = [
+    ['nene', [[2864, 1], [6452, 2], [8702, 1], [8926, 2]]],
+    ['meguru', [[2864, 2], [3877, 1], [3963, 2], [4298, 2], [8926, 1]]],
+    ['tsumugi', [[7666, 1], [8926, 4]]],
+    ['touko', [[7666, 2], [8896, 1], [8926, 3]]]
+  ];
+
+  for (const [expectedRoute, seq] of mainRoutes) {
+    vm.choiceSelections = {};
+    vm.choiceFlags = {};
+    vm.initGame('main', 0);
+    for (const [line, idx] of seq) pickAt(line, idx);
+    assert.equal(vm.resolveRouteBranchAt(9220), expectedRoute);
+    vm.currentLine = 9220;
+    vm.dialoguePage = 99;
+    vm.nextLine();
+    assert.equal(vm.currentScenario, expectedRoute);
+    assert.equal(vm.currentLine, 0);
+  }
+
+  // 3. Complete Nene route -> unlocks nene in clearedRoutes and Restart on title
+  vm.initGame('nene', 7157);
+  vm.dialoguePage = 99;
+  vm.nextLine();
+  assert.equal(vm.normalEnd, true);
+  assert.ok(api.readSettings().clearedRoutes.includes('nene'));
+  vm.exitToTitle();
+  assert.equal(vm.view, 'title');
+  assert.equal(vm.hasNeneCleared, true);
+  assert.equal(vm.hasNeneRestartCleared, false);
+
+  // 4. Now Wakana route is unlocked and reachable via real choice sequence at 8485
+  vm.choiceSelections = {};
+  vm.choiceFlags = {};
+  vm.initGame('main', 0);
+  for (const [line, idx] of [[2337, 1], [3877, 2], [4049, 2], [4993, 1]]) pickAt(line, idx);
+  assert.equal(vm.resolveRouteBranchAt(8485), 'wakana');
+  vm.currentLine = 8485;
+  vm.dialoguePage = 99;
+  vm.nextLine();
+  assert.equal(vm.currentScenario, 'wakana');
+  assert.equal(vm.currentLine, 0);
+
+  // 5. Complete Nene Restart route -> unlocks nene_restart in clearedRoutes
+  vm.startNeneRestart();
+  assert.equal(vm.currentScenario, 'nene_restart');
+  vm.currentLine = 5506;
+  vm.applyCurrentLine(false);
+  vm.dialoguePage = 99;
+  vm.nextLine();
+  assert.equal(vm.normalEnd, true);
+  assert.ok(api.readSettings().clearedRoutes.includes('nene_restart'));
+  vm.exitToTitle();
+  assert.equal(vm.hasNeneRestartCleared, true);
+});
+
