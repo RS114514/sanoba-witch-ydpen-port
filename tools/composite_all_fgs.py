@@ -106,6 +106,88 @@ CHARACTER_CONFIGS = [
         },
         "crop": {"cropX": 500.0, "cropY": 770.0, "cropW": 850.0, "cropH": 700.0},
         "extra_faces": []
+    },
+    {
+        "name": "七绪",
+        "aliases": ["七绪", "七緒"],
+        "folder": "６－七緒",
+        "prefix": "七緒a_0_",
+        "sinfo": "七緒a.sinfo",
+        "txt0": "七緒a_0.txt",
+        "dresses": {
+            "私服": ["私服エプロンなし", "髪かぶせ"],
+            "マスター": ["私服エプロンあり", "髪かぶせ"],
+            "裸": ["裸", "髪かぶせ"],
+        },
+        "crop": {"cropX": 505.0, "cropY": 820.0, "cropW": 850.0, "cropH": 700.0},
+        "extra_faces": ["05h", "09h"]
+    },
+    {
+        "name": "佳苗",
+        "aliases": ["佳苗"],
+        "folder": "７－佳苗",
+        "prefix": "佳苗a_0_",
+        "sinfo": "佳苗a.sinfo",
+        "txt0": "佳苗a_0.txt",
+        "dresses": {
+            "私服": ["私服", "前髪", "眼鏡"],
+        },
+        "crop": {"cropX": 477.0, "cropY": 810.0, "cropW": 850.0, "cropH": 700.0},
+        "extra_faces": []
+    },
+    {
+        "name": "秀明",
+        "aliases": ["秀明"],
+        "folder": "８－秀明",
+        "prefix": "秀明a_0_",
+        "sinfo": "秀明a.sinfo",
+        "txt0": "秀明a_0.txt",
+        "dresses": {
+            "制服": ["制服", "髪かぶせ"],
+            "コスプレ": ["ハロウィン", "ハロウィン用アンクル", "髪かぶせ"],
+        },
+        "crop": {"cropX": 460.0, "cropY": 670.0, "cropW": 850.0, "cropH": 700.0},
+        "extra_faces": ["02h", "04h", "09h", "14h", "15h", "16h", "20h", "21h", "26h", "28h", "31h", "32h", "33h"]
+    },
+    {
+        "name": "太一",
+        "aliases": ["太一"],
+        "folder": "９－太一",
+        "prefix": "太一a_0_",
+        "sinfo": "太一a.sinfo",
+        "txt0": "太一a_0.txt",
+        "dresses": {
+            "私服": ["スーツ上着あり", "髪かぶせ"],
+            "部屋着": ["スーツ上着なし", "髪かぶせ"],
+        },
+        "crop": {"cropX": 507.0, "cropY": 620.0, "cropW": 850.0, "cropH": 700.0},
+        "extra_faces": ["03h", "04h", "09h", "20h"]
+    },
+    {
+        "name": "宽太",
+        "aliases": ["宽太", "アカギ", "赤木"],
+        "folder": "１０－アカギ",
+        "prefix": "アカギa_0_",
+        "sinfo": "アカギa.sinfo",
+        "txt0": "アカギa_0.txt",
+        "dresses": {
+            "私服": ["私服", "前髪"],
+        },
+        "crop": {"cropX": 507.0, "cropY": 1240.0, "cropW": 850.0, "cropH": 700.0},
+        "extra_faces": ["04n", "08n", "12n", "25n", "26n", "29n", "30n", "31n", "32n"]
+    },
+    {
+        "name": "越路",
+        "aliases": ["越路"],
+        "folder": "１１－越路",
+        "prefix": "越路a_0_",
+        "sinfo": "越路a.sinfo",
+        "txt0": "越路a_0.txt",
+        "dresses": {
+            "制服": ["制服", "前髪"],
+        },
+        "crop": {"cropX": 484.0, "cropY": 920.0, "cropW": 850.0, "cropH": 700.0},
+        "extra_faces": ["05h", "06h", "07h", "08h", "09h", "12h", "13h", "15h", "16h", "17h", "18h", "20h", "23h", "26h", "28h", "29h", "31h"]
     }
 ]
 

@@ -425,12 +425,21 @@ function getActiveScenario(vm) {
   return chapter_all;
 }
 
-var STAND_HEROINE_NAMES = ['宁宁', '巡', '紬', '憧子', '和奏'];
+var STAND_HEROINE_NAMES = [
+  '宁宁', '寧々', '巡', 'めぐる', '紬', '憧子', '和奏',
+  '七绪', '七緒', '佳苗', '秀明', '太一', '宽太', '赤木', 'アカギ', '越路'
+];
 
-function resolveFgSrc(charInfo) {
+function resolveFgSrc(charInfo, speaker) {
   if (!charInfo) return '';
   var c = charInfo.char || '';
-  if (STAND_HEROINE_NAMES.indexOf(c) < 0) return '';
+  if (c.indexOf('effect') >= 0 || STAND_HEROINE_NAMES.indexOf(c) < 0) {
+    if (speaker && STAND_HEROINE_NAMES.indexOf(speaker) >= 0) {
+      c = speaker;
+    } else {
+      return '';
+    }
+  }
   return characterUrl('fg', c, charInfo.dress || '制服', charInfo.face || 1);
 }
 
@@ -540,12 +549,12 @@ export var gameMethods = {
 
     var G = getGal();
     if (G) {
+      G.stopVoice();
       if (playVoice && voice) {
-        G.stopVoice();
         var voiceFile = voice.toLowerCase().indexOf('.opus') >= 0 || voice.toLowerCase().indexOf('.ogg') >= 0 ? voice : voice + '.opus';
         G.playVoice(ASSET_ROOT + '/voice/' + voiceFile, 1.0);
         this.hasVoice = true;
-      } else if (!voice) {
+      } else {
         this.hasVoice = false;
       }
 
@@ -727,6 +736,8 @@ export var gameMethods = {
     var pages = dialoguePages(currentRow[2]);
     if (!this.skipMode && (this.dialoguePage || 0) < pages.length - 1) {
       this.dialoguePage = (this.dialoguePage || 0) + 1;
+      var pG = getGal();
+      if (pG) pG.stopVoice();
       if (this.autoPlay) this.scheduleAutoNext(pages[this.dialoguePage], null);
       return;
     }
@@ -1100,14 +1111,23 @@ export function renderGame(vm, h) {
   var bgm = row[5] || '';
   var charInfo = row[6] || null;
   var currentChapter = formatChapter(row[7] || getChapterByLine(lineIdx));
-  var cg = row[8] || '';
-  var sd = row[9] || '';
+  var raw8 = row[8] ? String(row[8]) : '';
+  var raw9 = row[9] ? String(row[9]) : '';
+  var sd = (raw8.toLowerCase().indexOf('sd') === 0) ? raw8 : ((raw9.toLowerCase().indexOf('sd') === 0) ? raw9 : '');
+  var cg = (raw8 && raw8.toLowerCase().indexOf('sd') !== 0) ? raw8 : '';
 
-  var bgSrc = cg
-    ? 'file://' + ASSET_ROOT + '/cg/' + cg + '.png'
-    : ((!bg || bg === '画面_黒') ? '' : 'file://' + ASSET_ROOT + '/bg/' + bg + '.png');
-  var fgSrc = resolveFgSrc(charInfo);
-  var sdSrc = sd ? 'file://' + ASSET_ROOT + '/sd/' + sd + '.png' : '';
+  var bgSrc = '';
+  if (cg) {
+    bgSrc = 'file://' + ASSET_ROOT + '/cg/' + cg + '.png';
+  } else if (bg && bg !== '画面_黒') {
+    if (bg.indexOf('ev') === 0 || bg.indexOf('cg') === 0) {
+      bgSrc = 'file://' + ASSET_ROOT + '/cg/' + bg + '.png';
+    } else {
+      bgSrc = 'file://' + ASSET_ROOT + '/bg/' + bg + '.png';
+    }
+  }
+  var fgSrc = resolveFgSrc(charInfo, speaker);
+  var sdSrc = sd ? 'file://' + ASSET_ROOT + '/sd/' + sd.toLowerCase() + '.png' : '';
 
   var speakerDisplay = activeChoice ? '【请选择】' : (speaker ? '【' + speaker + '】' : '【独 白】');
   var isNarration = !speaker && !activeChoice;

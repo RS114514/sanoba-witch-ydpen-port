@@ -85,10 +85,21 @@ export function standPath(name) {
 // a missing mapping renders an empty stage even though every sprite is present.
 var CHAR_ASSET = {
   '宁宁': '\u5be7\u3005',
+  '寧々': '\u5be7\u3005',
   '巡': '\u3081\u304f\u3099\u308b',
+  'めぐる': '\u3081\u304f\u3099\u308b',
   '紬': '紬',
   '憧子': '憧子',
-  '和奏': '和奏'
+  '和奏': '和奏',
+  '七绪': '七緒',
+  '七緒': '七緒',
+  '佳苗': '佳苗',
+  '秀明': '秀明',
+  '太一': '太一',
+  '宽太': 'アカギ',
+  '赤木': 'アカギ',
+  'アカギ': 'アカギ',
+  '越路': '越路'
 };
 var DRESS_ASSET = {
   'コスプレ': '\u30b3\u30b9\u30d5\u309a\u30ec',
@@ -111,13 +122,16 @@ var DRESS_ASSET = {
   '魔女服': '魔女服',
   '私服': '私服',
   '制服': '制服',
-  '裸': '裸'
+  '裸': '裸',
+  'マスター': 'マスター',
+  'スーツ上着あり': '私服',
+  'スーツ上着なし': '部屋着'
 };
 
 export function characterAssetName(char, dress, face) {
   var prefix = CHAR_ASSET[char];
   if (!prefix) return '';
-  var outfit = DRESS_ASSET[dress] || DRESS_ASSET['制服'];
+  var outfit = DRESS_ASSET[dress] || DRESS_ASSET['制服'] || '制服';
   if ((char === '宁宁' || char === '憧子') && outfit === DRESS_ASSET['コスプレ']) outfit = '制服';
   var code = String(face || '01').trim();
   var match = /^(\d{1,2})([a-z]?)$/i.exec(code);
@@ -126,9 +140,7 @@ export function characterAssetName(char, dress, face) {
   var f = '01';
   if (isFinite(n) && n >= 1 && n <= 43) {
     f = n < 10 ? '0' + n : '' + n;
-    // The extracted set has exact h variants; d/e/n/r variants were not
-    // extracted, so use their base number rather than a missing filename.
-    if (suffix === 'h' && n <= 20) f += suffix;
+    if ((suffix === 'h' || suffix === 'n') && n <= 43) f += suffix;
   }
   return prefix + '_' + outfit + '_' + f + '.png';
 }

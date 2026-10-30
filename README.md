@@ -85,19 +85,21 @@ python3 tools/sync_all_audio.py
 # 3. 运行资产审计对账，确保资源无缺失
 python3 tools/audit_assets.py
 
-# 4. 推送转换后的媒体素材至词典笔外部存储（需设备已连接 ADB）
-adb push /Volumes/500GB/gal_data/sanoba_witch/ /userdisk/gal_data/sanoba_witch/
+# 4. 一键同步全量素材（含全配角立绘/292张SD小人/2.3万句语音）至词典笔
+python3 tools/sync_all_assets_to_pen.py
 ```
 
 ### 软件编译打包与部署
 
 ```bash
-# 1. 运行本地自动化测试与 CSS 静态尺寸约束检查
+# 1. 运行本地全量自动化回归测试
 python3 build.py --check
-node --experimental-vm-modules --test tools/test_*.mjs
+node --experimental-vm-modules tools/test_adv_fixes.mjs
+node --experimental-vm-modules tools/test_core_ui.mjs
+node --experimental-vm-modules tools/test_gallery_ui.mjs
 
-# 2. 编译字节码并安装至词典笔
-python3 build.py --serial 9DA2200007506350 --install
+# 2. 编译字节码并安装至词典笔（放学回家连接设备后一键执行）
+python3 build.py --install
 ```
 
 ---

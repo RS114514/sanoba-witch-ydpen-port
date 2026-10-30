@@ -377,7 +377,7 @@ def main():
 
     if args.install:
         asset_root = "/userdisk/gal_data/sanoba_witch"
-        for extra in ("sys", "se"):
+        for extra in ("sys", "se", "sd"):
             local = os.path.join(HERE, "build_assets", extra)
             if os.path.isdir(local):
                 adb("shell", "mkdir -p %s/%s" % (asset_root, extra))
