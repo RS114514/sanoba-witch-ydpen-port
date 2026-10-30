@@ -133,14 +133,22 @@ export function characterAssetName(char, dress, face) {
   if (!prefix) return '';
   var outfit = DRESS_ASSET[dress] || DRESS_ASSET['制服'] || '制服';
   if ((char === '宁宁' || char === '憧子') && outfit === DRESS_ASSET['コスプレ']) outfit = '制服';
+  if ((char === '宽太' || char === '赤木' || char === 'アカギ') && outfit === 'マスター') outfit = '私服';
   var code = String(face || '01').trim();
   var match = /^(\d{1,2})([a-z]?)$/i.exec(code);
   var n = match ? Number(match[1]) : NaN;
   var suffix = match ? match[2].toLowerCase() : '';
   var f = '01';
   if (isFinite(n) && n >= 1 && n <= 43) {
+    if (n > 30 && (char === '七绪' || char === '七緒' || char === '佳苗' || char === '秀明' || char === '太一' || char === '越路')) {
+      n = 1;
+    }
     f = n < 10 ? '0' + n : '' + n;
-    if ((suffix === 'h' || suffix === 'n') && n <= 43) f += suffix;
+    if (suffix === 'h') {
+      f += 'h';
+    } else if (suffix === 'n' && (char === '宽太' || char === '赤木' || char === 'アカギ')) {
+      f += 'n';
+    }
   }
   return prefix + '_' + outfit + '_' + f + '.png';
 }
