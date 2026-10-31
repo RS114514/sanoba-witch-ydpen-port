@@ -1,6 +1,6 @@
 // pages/game/game.js —— 超宽带鱼屏 390+322+88 分栏视觉小说主引擎（魔女的夜宴）
 import { S, getGal, log, getChapterByLine, formatChapter, resolveSlotThumbnail } from '../../common.js';
-import { characterUrl } from '../../media.js';
+import { characterUrl, cgUrl } from '../../media.js';
 import {
   readAllSaves,
   writeAllSaves,
@@ -1118,10 +1118,10 @@ export function renderGame(vm, h) {
 
   var bgSrc = '';
   if (cg) {
-    bgSrc = 'file://' + ASSET_ROOT + '/cg/' + cg + '.png';
+    bgSrc = cgUrl(cg);
   } else if (bg && bg !== '画面_黒') {
     if (bg.indexOf('ev') === 0 || bg.indexOf('cg') === 0) {
-      bgSrc = 'file://' + ASSET_ROOT + '/cg/' + bg + '.png';
+      bgSrc = cgUrl(bg);
     } else {
       bgSrc = 'file://' + ASSET_ROOT + '/bg/' + bg + '.png';
     }

@@ -381,7 +381,7 @@ def main():
             local = os.path.join(HERE, "build_assets", extra)
             if os.path.isdir(local):
                 adb("shell", "mkdir -p %s/%s" % (asset_root, extra))
-                adb("push", local + "/.", "%s/%s/" % (asset_root, extra))
+                adb("push", local + "/.", "%s/%s/" % (asset_root, extra), timeout=600)
                 print("      [assets] %s/ 已同步" % extra)
         print("[+] 安装到词典笔 (appid=%s)" % args.appid)
         adb("push", amr_path, "/tmp/sanoba_witch.amr")

@@ -64,12 +64,39 @@ export function voicePath(name) {
   return file ? ASSET_ROOT + '/voice/' + file : '';
 }
 
+var DUAL_STAGE_CGS = {
+  'ev104': true, 'ev106': true, 'ev108': true, 'ev110': true, 'ev111': true,
+  'ev115': true, 'ev116': true, 'ev117': true, 'ev118': true, 'ev121': true,
+  'ev122': true, 'ev124': true, 'ev125': true, 'ev203': true, 'ev205': true,
+  'ev206': true, 'ev212': true, 'ev214': true, 'ev215': true, 'ev216': true,
+  'ev217': true, 'ev308': true, 'ev310': true, 'ev311': true, 'ev318': true,
+  'ev405': true, 'ev409': true, 'ev414': true, 'ev416': true, 'ev417': true,
+  'ev418': true, 'ev502': true, 'ev507': true, 'ev510': true, 'ev601': true
+};
+
+export function resolveCgName(name) {
+  var str = String(name || '').toLowerCase().trim();
+  if (!str) return '';
+  if (str.indexOf('sd') === 0) return str;
+  var match = /^ev(\d{3})([a-z])([a-z]?)$/i.exec(str);
+  if (match) {
+    var prefix = 'ev' + match[1];
+    var stage = match[2].toLowerCase();
+    if (DUAL_STAGE_CGS[prefix]) {
+      return stage === 'a' ? (prefix + 'a') : (prefix + 'b');
+    }
+    return prefix + 'a';
+  }
+  return str;
+}
+
 export function cgPath(name) {
   var str = String(name || '').toLowerCase();
   if (str.indexOf('sd') === 0) {
     return assetPath('sd', name, '.png');
   }
-  return assetPath('cg', name, '.png');
+  var resolved = resolveCgName(str);
+  return assetPath('cg', resolved, '.png');
 }
 
 export function fgPath(name) {
